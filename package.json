@@ -5,9 +5,9 @@
   "type": "module",
   "description": "PacketCraft — an interactive, playable way to learn computer networking from basics to deep dives.",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "vite site",
+    "build": "node scripts/clean-assets.mjs && vite build site",
+    "preview": "vite preview site --outDir .."
   },
   "license": "MIT",
   "dependencies": {

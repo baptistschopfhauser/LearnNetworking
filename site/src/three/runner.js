@@ -242,6 +242,7 @@ export function mountRunner(shell) {
     if (r.lan) opts.push({ iface: 'lan0', label: 'lan0 → deliver to host', to: 'host' });
     $('#r-hops', shell).innerHTML = opts.map((o, i) => `<button class="hop-btn" data-iface="${o.iface}"><kbd>${i + 1}</kbd>${o.label}</button>`).join('');
     shell.querySelectorAll('.hop-btn').forEach((b) => (b.onclick = () => choose(b.dataset.iface)));
+    if (window.innerWidth < 760) side.style.bottom = ($('#r-hops', shell).offsetHeight + 24) + 'px';
     // option labels at neighbour routers
     labels.filter((l) => l.id === 'opt').forEach((l) => l.el.remove());
     labels = labels.filter((l) => l.id !== 'opt');
@@ -379,7 +380,7 @@ export function mountRunner(shell) {
   onCleanup(() => window.removeEventListener('keydown', onKey));
 
   /* ---------- camera orbit ---------- */
-  let theta = -0.25, phi = 1.1, dist = 32, dragging = false, lx = 0, ly = 0;
+  let theta = -0.25, phi = 1.1, dist = window.innerWidth < 760 ? 46 : 32, dragging = false, lx = 0, ly = 0;
   const camTarget = new THREE.Vector3();
   canvas.addEventListener('pointerdown', (e) => { dragging = true; lx = e.clientX; ly = e.clientY; canvas.setPointerCapture(e.pointerId); });
   canvas.addEventListener('pointermove', (e) => { if (!dragging) return; theta -= (e.clientX - lx) * 0.006; phi = Math.max(0.25, Math.min(1.45, phi - (e.clientY - ly) * 0.005)); lx = e.clientX; ly = e.clientY; });

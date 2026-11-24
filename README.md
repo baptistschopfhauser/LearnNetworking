@@ -25,21 +25,27 @@ An interactive website that teaches computer networking from the very basics ("w
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
-npm run build    # static site in dist/
+npm run dev      # http://localhost:5173 (serves site/)
+npm run build    # builds into the repo root
 npm run preview
 ```
 
 It's a static site with no backend. It uses Vite, vanilla JS and Three.js. The 3D code is lazy-loaded, so lessons stay light (about 60 KB gzipped).
 
-## Deploy
+## Deploy (GitHub Pages)
 
-`.github/workflows/deploy.yml` builds and publishes the site to GitHub Pages on every push to `main`. To turn it on, go to **Settings → Pages → Source** and choose **GitHub Actions**.
+The source lives in `site/`. `npm run build` writes the ready-to-serve site (`index.html` + `assets/`) to the **repository root**, and the built files are committed. So GitHub Pages works with the default setting:
+
+**Settings → Pages → Source: Deploy from a branch → `<your branch>` / `(root)`**
+
+After changing anything in `site/`, run `npm run build` and commit the updated `index.html` and `assets/`.
 
 ## Project layout
 
 ```
-src/
+index.html, assets/  built site (generated, served by GitHub Pages)
+site/index.html      source HTML
+site/src/
   main.js            hash router
   core.js            helpers, progress/XP store, networking math
   pages.js           home, learn, module, play, toolkit, glossary, challenge

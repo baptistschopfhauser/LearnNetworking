@@ -235,7 +235,7 @@ export async function game(app, id) {
   document.body.style.overflow = 'hidden';
   onCleanup(() => (document.body.style.overflow = ''));
   app.innerHTML = `<div class="game-shell"><canvas class="g3d"></canvas><div class="hud-layer" style="position:absolute;inset:0;pointer-events:none;z-index:4"></div>
-    <a href="#/play" class="btn small ghost" style="position:absolute;left:16px;bottom:16px;z-index:6;background:rgba(8,11,22,.8)">← Arcade</a></div>`;
+    <a href="#/play" class="btn small ghost game-back">← Arcade</a></div>`;
   const shell = $('.game-shell', app);
   if (!webglOK()) { shell.innerHTML = '<div class="overlay"><div class="panel"><h2>WebGL unavailable</h2><p>This game needs WebGL. Try a recent Chrome, Firefox, Safari or Edge.</p><a class="btn" href="#/play">Back</a></div></div>'; return; }
   const loaders = { runner: () => import('./three/runner.js').then((m) => m.mountRunner), tower: () => import('./three/tower.js').then((m) => m.mountTower), defender: () => import('./three/defender.js').then((m) => m.mountDefender) };

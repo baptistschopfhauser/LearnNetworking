@@ -416,3 +416,17 @@ input[type=range] { accent-color: var(--mint); width: 100%; }
 
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+
+/* game shell: back button + compact phone HUD */
+.game-back { position: absolute; left: 16px; bottom: 16px; z-index: 6; background: rgba(8,11,22,.8); }
+@media (max-width: 760px) {
+  .game-back { top: 10px; right: 10px; left: auto; bottom: auto; padding: 6px 12px; font-size: .78rem; }
+  .hud-top { top: 10px; left: 10px; right: 96px; gap: 6px; }
+  .hud-pill { padding: 5px 10px; font-size: .62rem; border-radius: 10px; }
+  .hud-pill b { font-size: 1rem; }
+  .hud-pill.dest b { font-size: .82rem; }
+  .hud-bottom { bottom: 12px; gap: 6px; }
+  .hop-btn { padding: 8px 12px; font-size: .78rem; }
+  .hud-panel { padding: 12px; font-size: .76rem; }
+  .game-shell { height: calc(100dvh - var(--topbar-h)); }
+}

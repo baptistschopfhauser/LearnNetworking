@@ -279,7 +279,7 @@ export function mountTower(shell) {
   $('#t-start', overlay).onclick = startRound;
 
   // orbit camera
-  let theta = 0.35, phi = 1.2, dist = 50, dragging = false, lx = 0, ly = 0;
+  let theta = 0.35, phi = 1.2, dist = window.innerWidth < 760 ? 72 : 50, dragging = false, lx = 0, ly = 0;
   canvas.addEventListener('pointerdown', (e) => { dragging = true; lx = e.clientX; ly = e.clientY; canvas.setPointerCapture(e.pointerId); });
   canvas.addEventListener('pointermove', (e) => { if (!dragging) return; theta -= (e.clientX - lx) * 0.006; phi = Math.max(0.3, Math.min(1.5, phi - (e.clientY - ly) * 0.005)); lx = e.clientX; ly = e.clientY; });
   canvas.addEventListener('pointerup', () => (dragging = false));
