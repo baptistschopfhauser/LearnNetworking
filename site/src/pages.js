@@ -13,6 +13,14 @@ function bindFooter(root) {
 
 /* ---------------- game catalogue ---------------- */
 export const GAMES = [
+  { id: 'journey', title: 'Journey of a Click', tag: 'Story · 3D', color: 'var(--sky)', blurb: 'A guided 3D cinematic of everything that happens when you load a page: ARP, DNS recursion, the TCP handshake, TLS and HTTP, packet by packet.', module: 'http-tls',
+    art: `<svg viewBox="0 0 320 180"><rect width="320" height="180" fill="#070a16"/>
+      <path d="M40 130 Q 90 100 120 120 T 200 110 T 285 120" stroke="#2c3a6a" stroke-width="2" fill="none"/>
+      <path d="M120 120 Q 150 60 180 40 M180 40 L 230 45 L 270 60" stroke="#2c3a6a" stroke-width="2" fill="none"/>
+      <path d="M40 130 Q 90 100 120 120 T 200 110 T 285 120" stroke="#5cf2c2" stroke-width="2.5" fill="none" stroke-dasharray="8 200"><animate attributeName="stroke-dashoffset" from="0" to="-260" dur="2.4s" repeatCount="indefinite"/></path>
+      <rect x="24" y="118" width="32" height="20" rx="3" fill="#161d36" stroke="#5cf2c2"/><rect x="270" y="104" width="30" height="30" rx="3" fill="#161d36" stroke="#ff7a45"/>
+      ${[[120, 120, '#8b7bff'], [180, 40, '#ffd166'], [230, 45, '#ffd166'], [270, 60, '#ffd166'], [200, 110, '#4cc9ff']].map(([x, y, c]) => `<circle cx="${x}" cy="${y}" r="6" fill="#161d36" stroke="${c}" stroke-width="2"/>`).join('')}
+      <text x="274" y="96" font-size="14">🔒</text></svg>` },
   { id: 'runner', title: 'Packet Runner', tag: 'Routing', color: 'var(--mint)', blurb: 'You are an IP packet. Read routing tables, apply longest-prefix match, and reach your destination before TTL hits zero.', module: 'routing',
     art: `<svg viewBox="0 0 320 180"><defs><radialGradient id="ga" cx="50%" cy="50%"><stop offset="0" stop-color="#1b2150"/><stop offset="1" stop-color="#05070f"/></radialGradient></defs><rect width="320" height="180" fill="url(#ga)"/>
       <g stroke="#3a4a80" stroke-width="1.5"><line x1="40" y1="90" x2="110" y2="50"/><line x1="40" y1="90" x2="110" y2="130"/><line x1="110" y1="50" x2="190" y2="70"/><line x1="110" y1="130" x2="190" y2="70"/><line x1="110" y1="130" x2="190" y2="140"/><line x1="190" y1="70" x2="270" y2="95"/><line x1="190" y1="140" x2="270" y2="95"/></g>
@@ -55,7 +63,7 @@ export async function home(app) {
       <div class="hero-stats">
         <div><b>${MODULES.length}</b>modules</div>
         <div><b>${Object.keys(WIDGETS).length}</b>interactive labs</div>
-        <div><b>${GAMES.length}</b>3D games</div>
+        <div><b>${GAMES.length}</b>3D experiences</div>
         <div><b>${done}/${MODULES.length}</b>completed</div>
       </div>
     </div>
@@ -87,6 +95,16 @@ export async function home(app) {
       <ul class="feature-list"><li>Longest-prefix match under time pressure</li><li>Default routes, covering /8s and sneaky look-alike /24s</li><li>Five levels, growing networks, a personal best to beat</li></ul>
       <div class="btn-row"><a class="btn ghost" href="#/play/tower">Encapsulation Elevator</a><a class="btn ghost" href="#/play/defender">Firewall Defender</a></div>
     </div>
+  </div></section>
+
+  <section class="section" style="padding-top:0"><div class="wrap split">
+    <div>
+      <div class="eyebrow">New · 3D story</div>
+      <h2>Follow one click across the Internet.</h2>
+      <p class="lead"><b>Journey of a Click</b> slows a page load down to human speed. Watch ARP, NAT, a DNS resolver walking the root→TLD→authoritative chain, the TCP handshake, TLS key exchange and HTTP, all as packets flying through a 3D network.</p>
+      <div class="btn-row"><a class="btn" href="#/play/journey">▶ Start the journey</a><a class="btn ghost" href="#/learn/troubleshooting">⌨️ Open the terminal</a></div>
+    </div>
+    <a class="game-tile" href="#/play/journey" aria-label="Journey of a Click">${GAMES.find((g) => g.id === 'journey').art}</a>
   </div></section>
 
   <section class="section"><div class="wrap">
@@ -219,7 +237,7 @@ function renderQuiz(root, m) {
 export function play(app) {
   app.innerHTML = `<div class="wrap page-enter" style="padding-top:56px;padding-bottom:80px">
     <div class="eyebrow">Arcade</div><h1 style="font-size:clamp(2.2rem,5vw,3.6rem)">Playable 3D</h1>
-    <p class="lead">Three games, each built around a real networking skill. Drag to orbit, scroll to zoom, numbers on your keyboard to answer.</p>
+    <p class="lead">A guided 3D story and three games, each built around a real networking skill. Drag to orbit, scroll to zoom, numbers on your keyboard to answer.</p>
     ${webglOK() ? '' : '<div class="callout warn"><span class="ci">⚠</span><div><p>Your browser doesn’t seem to support WebGL, which the 3D games need.</p></div></div>'}
     <div class="games-grid" style="margin-top:32px">${GAMES.map((g) => `<a class="card hover game-card" href="#/play/${g.id}">
       <div class="art">${g.art}</div>
@@ -238,7 +256,7 @@ export async function game(app, id) {
     <a href="#/play" class="btn small ghost game-back">← Arcade</a></div>`;
   const shell = $('.game-shell', app);
   if (!webglOK()) { shell.innerHTML = '<div class="overlay"><div class="panel"><h2>WebGL unavailable</h2><p>This game needs WebGL. Try a recent Chrome, Firefox, Safari or Edge.</p><a class="btn" href="#/play">Back</a></div></div>'; return; }
-  const loaders = { runner: () => import('./three/runner.js').then((m) => m.mountRunner), tower: () => import('./three/tower.js').then((m) => m.mountTower), defender: () => import('./three/defender.js').then((m) => m.mountDefender) };
+  const loaders = { runner: () => import('./three/runner.js').then((m) => m.mountRunner), tower: () => import('./three/tower.js').then((m) => m.mountTower), defender: () => import('./three/defender.js').then((m) => m.mountDefender), journey: () => import('./three/journey.js').then((m) => m.mountJourney) };
   const mount = await loaders[id]();
   if (!document.body.contains(shell)) return; // navigated away while loading
   mount(shell);
@@ -247,7 +265,8 @@ export async function game(app, id) {
 /* ======================================================================
    LAB / TOOLKIT
    ====================================================================== */
-const TOOLS = [
+export const TOOLS = [
+  { id: 'terminal', name: 'Terminal', icon: '⌨️' },
   { id: 'subnet', name: 'Subnet calculator', icon: '🧮' },
   { id: 'subnet-practice', name: 'Subnet drills', icon: '🎯' },
   { id: 'bits', name: 'Binary ↔ IP', icon: '🔢' },
@@ -258,6 +277,8 @@ const TOOLS = [
   { id: 'http', name: 'HTTP client', icon: '🌐' },
   { id: 'firewall', name: 'Firewall rules', icon: '🛡️' },
   { id: 'signal', name: 'Line codes', icon: '〰️' },
+  { id: 'wifi', name: 'Wi‑Fi planner', icon: '📶' },
+  { id: 'loadbalancer', name: 'Load balancer', icon: '⚖️' },
 ];
 export function lab(app, tool) {
   const cur = TOOLS.find((t) => t.id === tool) || TOOLS[0];
@@ -382,4 +403,51 @@ export function challenge(app) {
 
 export function notFound(app) {
   app.innerHTML = `<div class="wrap" style="padding:120px 0;text-align:center"><div style="font:800 6rem var(--font-display);color:var(--orange)">404</div><h2>Destination host unreachable</h2><p>ICMP type 3 — this route doesn’t exist.</p><a class="btn" href="#/">Back to the default route</a></div>`;
+}
+
+/* ======================================================================
+   PROFILE & ACHIEVEMENTS
+   ====================================================================== */
+const has = (id) => !!store.get().awarded[id];
+const countPrefix = (p) => Object.keys(store.get().awarded).filter((k) => k.startsWith(p)).length;
+export const BADGES = [
+  { icon: '🌱', name: 'First steps', desc: 'Complete any module', test: () => Object.keys(store.get().done).length >= 1 },
+  { icon: '🧱', name: 'Solid foundations', desc: 'Complete every Foundations module', test: () => MODULES.filter((m) => m.level === 'foundations').every((m) => store.isDone(m.id)) },
+  { icon: '⚙️', name: 'Core engineer', desc: 'Complete every Core module', test: () => MODULES.filter((m) => m.level === 'core').every((m) => store.isDone(m.id)) },
+  { icon: '🌍', name: 'Netizen', desc: 'Complete the Internet track', test: () => MODULES.filter((m) => m.level === 'apps').every((m) => store.isDone(m.id)) },
+  { icon: '🎓', name: 'Graduate', desc: 'Complete all modules', test: () => MODULES.every((m) => store.isDone(m.id)) },
+  { icon: '🤿', name: 'Deep diver', desc: 'Open 10 deep dives', test: () => countPrefix('deep-') >= 10 },
+  { icon: '🧮', name: 'Subnet slayer', desc: 'Reach a 5-streak in subnet drills', test: () => has('subnet-win-5') },
+  { icon: '🧭', name: 'Packet Runner', desc: 'Clear all 5 routing levels', test: () => has('runner-win') },
+  { icon: '🧅', name: 'Stack master', desc: 'Finish Encapsulation Elevator', test: () => has('tower-win') },
+  { icon: '🛡️', name: 'Gatekeeper', desc: 'Win Firewall Defender', test: () => has('defender-win') },
+  { icon: '🎬', name: 'Tourist', desc: 'Finish Journey of a Click', test: () => has('journey-done') },
+  { icon: '⌨️', name: 'Terminal master', desc: 'Finish every terminal mission', test: () => has('term-all') },
+  { icon: '🔥', name: 'Firewall architect', desc: 'Solve the firewall puzzle with ≤ 4 rules', test: () => has('fw-lean') },
+  { icon: '⚖️', name: 'Traffic cop', desc: 'Tame a slow server with least-connections', test: () => has('lb-lc') },
+  { icon: '🧙', name: 'Network wizard', desc: '10+ correct in the Challenge', test: () => has('challenge-10') },
+  { icon: '🌐', name: 'Status collector', desc: 'Find all 9 HTTP status codes', test: () => has('http-9') },
+];
+
+export function profile(app) {
+  const st = store.get();
+  const { lvl, into, need } = levelInfo();
+  const got = BADGES.filter((b) => b.test()).length;
+  const done = Object.keys(st.done).length;
+  app.innerHTML = `<div class="wrap page-enter" style="padding-top:56px;padding-bottom:80px">
+    <div class="eyebrow">Profile</div><h1 style="font-size:clamp(2.2rem,5vw,3.6rem)">Your progress</h1>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin:28px 0">
+      <div class="card"><small class="mono" style="color:var(--muted)">LEVEL</small><div class="big-score" style="margin:6px 0 10px">${lvl}</div><div class="progress-bar"><div style="width:${(into / need) * 100}%"></div></div><small class="mono" style="color:var(--muted)">${into}/${need} XP to next</small></div>
+      <div class="card"><small class="mono" style="color:var(--muted)">TOTAL XP</small><div class="big-score" style="margin:6px 0 10px;color:var(--violet)">${st.xp}</div><small class="mono" style="color:var(--muted)">${Object.keys(st.awarded).length} achievements earned</small></div>
+      <div class="card"><small class="mono" style="color:var(--muted)">MODULES</small><div class="big-score" style="margin:6px 0 10px;color:var(--orange)">${done}/${MODULES.length}</div><div class="progress-bar"><div style="width:${(done / MODULES.length) * 100}%;background:linear-gradient(90deg,var(--orange),var(--pink))"></div></div></div>
+      <div class="card"><small class="mono" style="color:var(--muted)">BADGES</small><div class="big-score" style="margin:6px 0 10px;color:var(--yellow)">${got}/${BADGES.length}</div><small class="mono" style="color:var(--muted)">keep playing to unlock more</small></div>
+    </div>
+    <h2>Badges</h2>
+    <div class="badge-grid">${BADGES.map((b) => { const ok = b.test(); return `<div class="badge ${ok ? 'on' : ''}"><div class="badge-ico">${ok ? b.icon : '🔒'}</div><b>${b.name}</b><small>${b.desc}</small></div>`; }).join('')}</div>
+    <h2 style="margin-top:48px">High scores</h2>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">${[['runner', 'Packet Runner'], ['tower', 'Encapsulation Elevator'], ['defender', 'Firewall Defender'], ['challenge', 'Challenge']].map(([id, n]) => `<a class="card hover" href="#/${id === 'challenge' ? 'challenge' : 'play/' + id}" style="color:var(--text)"><small class="mono" style="color:var(--muted)">${n.toUpperCase()}</small><div style="font:800 2rem var(--font-display);margin-top:6px">${store.best(id) || '—'}</div></a>`).join('')}</div>
+    <h2 style="margin-top:48px">Modules</h2>
+    <div class="tbl-wrap"><table class="tbl">${MODULES.map((m) => `<tr><td>${m.icon} <a href="#/learn/${m.id}">${esc(m.title)}</a></td><td>${LEVELS.find((l) => l.id === m.level).name}</td><td>${store.isDone(m.id) ? `<span style="color:var(--mint)">✓ ${new Date(st.done[m.id]).toLocaleDateString()}</span>` : '<span style="color:var(--muted)">not yet</span>'}</td></tr>`).join('')}</table></div>
+  </div>${footer()}`;
+  bindFooter(app);
 }

@@ -1,6 +1,7 @@
 import './styles.css';
 import { $, $$, renderXP, runCleanups } from './core.js';
 import * as pages from './pages.js';
+import { initPalette } from './palette.js';
 
 const app = $('#app');
 
@@ -14,6 +15,7 @@ const routes = [
   [/^\/lab\/([\w-]+)$/, (m) => pages.lab(app, m[1]), 'lab'],
   [/^\/glossary\/?$/, () => pages.glossary(app), 'glossary'],
   [/^\/challenge\/?$/, () => pages.challenge(app), 'challenge'],
+  [/^\/profile\/?$/, () => pages.profile(app), 'profile'],
 ];
 
 function route() {
@@ -34,7 +36,7 @@ function route() {
   if (!matched) pages.notFound(app);
   window.scrollTo({ top: 0, behavior: 'instant' });
   app.focus({ preventScroll: true });
-  const titles = { learn: 'Learn', play: 'Play 3D', lab: 'Toolkit', glossary: 'Glossary', challenge: 'Challenge' };
+  const titles = { profile: 'Profile', learn: 'Learn', play: 'Play 3D', lab: 'Toolkit', glossary: 'Glossary', challenge: 'Challenge' };
   const seg = path.split('/')[1];
   document.title = titles[seg] ? `${titles[seg]} · PacketCraft` : 'PacketCraft — Learn Networking by Playing';
 }
@@ -42,4 +44,6 @@ function route() {
 window.addEventListener('hashchange', route);
 $('#menu-btn').addEventListener('click', () => $('#nav').classList.toggle('open'));
 renderXP();
+const openPalette = initPalette(pages.GAMES, pages.TOOLS);
+$('#search-btn').addEventListener('click', openPalette);
 route();

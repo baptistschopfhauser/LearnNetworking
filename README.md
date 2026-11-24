@@ -4,22 +4,24 @@ An interactive website that teaches computer networking from the very basics ("w
 
 ## What's inside
 
-**11 modules in 3 tracks.** Each one has plain-language explanations, analogies, live labs, optional *deep dive* panels, and a 3-question quiz.
+**14 modules in 4 tracks.** Each one has plain-language explanations, analogies, live labs, optional *deep dive* panels, and a 3-question quiz.
 
 | Track | Modules |
 |---|---|
-| Foundations | What is a network? · Layers (OSI & TCP/IP) · Bits on the wire |
+| Foundations | What is a network? · Layers (OSI & TCP/IP) · Bits on the wire · Wi‑Fi & wireless |
 | Core mechanics | IP addresses & binary · Subnetting · Ethernet, switches & ARP · Routing · TCP & UDP |
 | The Internet you use | DNS · HTTP & TLS · NAT, firewalls & security |
+| Pro track | Troubleshooting like a pro · Load balancing, CDNs & scale |
 
-**16 interactive labs:** a topology lab where you cut links, an OSI encapsulation animator, line-code waveforms, an IPv4 bit flipper, a subnet calculator and drills, a switch MAC-learning and ARP simulator, a longest-prefix-match trainer, a Dijkstra/OSPF playground, a TCP sequence tracer with packet loss, a congestion-window chart, a DNS resolution walkthrough, an HTTP client, a TLS 1.3 handshake stepper with a Diffie-Hellman toy, a NAT table simulator, and a firewall rule puzzle.
+**19 interactive labs:** a simulated Linux terminal with 10 missions (`ping`, `traceroute`, `dig`, `curl`, `nc`, `ss`…), a Wi‑Fi floor-plan planner with signal heatmap and channel interference, a load balancer simulator with health checks and slow/dead servers, a topology lab where you cut links, an OSI encapsulation animator, line-code waveforms, an IPv4 bit flipper, a subnet calculator and drills, a switch MAC-learning and ARP simulator, a longest-prefix-match trainer, a Dijkstra/OSPF playground, a TCP sequence tracer with packet loss, a congestion-window chart, a DNS resolution walkthrough, an HTTP client, a TLS 1.3 handshake stepper with a Diffie-Hellman toy, a NAT table simulator, and a firewall rule puzzle.
 
-**3 playable 3D games** (Three.js):
+**4 3D experiences** (Three.js):
+- **Journey of a Click**: a guided 3D cinematic of a page load, step by step: ARP, DNS recursion, the TCP handshake, TLS 1.3, HTTP and rendering.
 - **Packet Runner**: you are an IP packet flying through a 3D network. Read each router's table, apply longest-prefix match, and arrive before your TTL runs out. There are 5 levels.
 - **Encapsulation Elevator**: ride a message down the sender's stack adding headers, cross the wire as bits, then unwrap it on the receiver.
 - **Firewall Defender**: an arcade game. Packets swarm your data center, and you zap the ones the policy forbids.
 
-**Also:** a toolkit page with every lab on its own, a searchable glossary of 80+ terms, a timed 12-question challenge, and XP and levels saved in `localStorage`.
+**Also:** a ⌘K / Ctrl+K command palette to search everything, a profile page with 16 achievement badges and high scores, a toolkit page with every lab on its own, a searchable glossary of 100+ terms, a timed 12-question challenge, and XP and levels saved in `localStorage`.
 
 ## Run it
 

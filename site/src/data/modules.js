@@ -10,6 +10,7 @@ export const LEVELS = [
   { id: 'foundations', name: 'Foundations', blurb: 'What a network is, how data is layered, and how bits travel.' },
   { id: 'core', name: 'Core mechanics', blurb: 'Addressing, switching, routing and reliable transport.' },
   { id: 'apps', name: 'The Internet you use', blurb: 'Names, the web, encryption and keeping networks safe.' },
+  { id: 'pro', name: 'Pro track', blurb: 'Diagnose problems like an engineer and run services at scale.' },
 ];
 
 export const MODULES = [
@@ -177,6 +178,65 @@ ${deep('Error detection: parity, checksums and CRC', `
       { q: 'Why does Manchester encoding make clock recovery easy?', a: ['It uses four voltage levels', 'Every bit contains a transition', 'It never sends zeros', 'It runs on fibre only'], c: 1, why: 'The guaranteed mid-bit transition lets the receiver resynchronise its clock on every bit.' },
       { q: 'Which access method does Wi‑Fi use?', a: ['CSMA/CD', 'CSMA/CA', 'Token passing', 'Circuit switching'], c: 1, why: 'Radios can’t detect collisions while sending, so Wi‑Fi avoids them (Collision Avoidance) and uses ACKs.' },
       { q: 'PAM-4 sends how many bits per symbol?', a: ['1', '2', '4', '8'], c: 1, why: 'Four levels = log₂(4) = 2 bits per symbol.' },
+    ],
+  },
+
+  /* ============================================================ */
+  {
+    id: 'wifi', level: 'foundations', icon: '📶', color: '#4cc9ff', minutes: 10,
+    title: 'Wi‑Fi & wireless',
+    summary: 'Radio, channels, signal strength and why your Wi‑Fi is slow in the bedroom.',
+    body: `
+<h2 id="radio">Networking over radio</h2>
+<p><strong>Wi‑Fi</strong> (IEEE 802.11) carries Ethernet‑like frames over radio waves. Your laptop and the <strong>access point</strong> (AP) take turns talking on a shared <strong>channel</strong>, a slice of the 2.4 GHz, 5 GHz or 6 GHz band. Unlike a cable, the air is shared with neighbours, microwaves and Bluetooth, and walls absorb the signal.</p>
+${analogy('Wi‑Fi is a conversation in a busy café. The further apart you sit, the louder you have to speak and the slower you talk so you’re understood. If the next table uses the same "channel", you keep interrupting each other.')}
+
+<h2 id="signal">Signal strength: RSSI and SNR</h2>
+<p>Signal strength is measured in <strong>dBm</strong>, a logarithmic scale where −30 dBm is excellent and −90 dBm is barely there. What really matters is the <strong>SNR</strong> (signal‑to‑noise ratio): how far the signal stands above the background noise (about −95 dBm). A higher SNR lets the radio use denser modulation and get more bits per second.</p>
+<p>Drag the laptop and the access points around the flat below. Walls cost signal, distance costs signal, and two APs on the same channel step on each other.</p>
+<div data-widget="wifi"></div>
+<div class="tbl-wrap"><table class="tbl">
+<tr><th>RSSI</th><th>Quality</th><th>What you’ll notice</th></tr>
+<tr><td>−30 to −55 dBm</td><td>Excellent</td><td>Top speeds, 4K streaming, big downloads</td></tr>
+<tr><td>−55 to −67 dBm</td><td>Good</td><td>Video calls are fine</td></tr>
+<tr><td>−67 to −75 dBm</td><td>Fair</td><td>Browsing OK, calls may stutter</td></tr>
+<tr><td>below −80 dBm</td><td>Poor</td><td>Drops, retries, very low rates</td></tr>
+</table></div>
+
+<h2 id="bands">Bands and channels</h2>
+<ul>
+<li><strong>2.4 GHz</strong>: long range and passes walls well, but crowded and slow. Only channels <strong>1, 6 and 11</strong> don’t overlap.</li>
+<li><strong>5 GHz</strong>: many more channels and much faster, but shorter range.</li>
+<li><strong>6 GHz</strong> (Wi‑Fi 6E/7): huge clean spectrum and very wide channels, but the shortest range.</li>
+</ul>
+${note('When two networks share a channel they don’t add up, they <em>split</em> the airtime. Picking a different non‑overlapping channel often helps more than buying a faster router.')}
+
+<h2 id="joining">How a device joins</h2>
+<ol>
+<li><strong>Scan</strong>: listen for <em>beacons</em> (APs announce their SSID about 10 times per second).</li>
+<li><strong>Authenticate & associate</strong> with the chosen AP.</li>
+<li><strong>WPA2/WPA3 4‑way handshake</strong>: derive encryption keys from the password without sending it.</li>
+<li><strong>DHCP</strong>: get an IP address, then you’re online.</li>
+</ol>
+
+${deep('Wi‑Fi generations and what actually made them faster', `
+<div class="tbl-wrap"><table class="tbl">
+<tr><th>Name</th><th>Standard</th><th>Key tricks</th></tr>
+<tr><td>Wi‑Fi 4</td><td>802.11n</td><td>MIMO (multiple antennas), 40 MHz channels</td></tr>
+<tr><td>Wi‑Fi 5</td><td>802.11ac</td><td>256‑QAM, 80/160 MHz, downlink MU‑MIMO</td></tr>
+<tr><td>Wi‑Fi 6/6E</td><td>802.11ax</td><td>OFDMA (many users per transmission), 1024‑QAM, 6 GHz band, target wake time</td></tr>
+<tr><td>Wi‑Fi 7</td><td>802.11be</td><td>320 MHz channels, 4096‑QAM, multi‑link operation across bands</td></tr>
+</table></div>
+<p>The theme: more <em>bandwidth</em> (wider channels), more <em>bits per symbol</em> (denser QAM, which needs high SNR), more <em>parallel streams</em> (MIMO), and better <em>sharing</em> (OFDMA). Range barely improved; physics didn’t change.</p>`)}
+${deep('The hidden node problem and RTS/CTS', `
+<p>Laptops A and B can both hear the AP but not each other (a wall between them). Both sense a "free" channel and transmit at once, so their frames collide <em>at the AP</em>. The fix is <strong>RTS/CTS</strong>: a station asks "Request To Send", and the AP answers "Clear To Send" so loudly that every station hears it and stays quiet. It costs airtime, so it’s used for larger frames.</p>`)}
+${deep('Wi‑Fi security: WEP → WPA2 → WPA3', `
+<p><strong>WEP</strong> was broken in minutes. <strong>WPA2‑PSK</strong> uses a 4‑way handshake, but anyone who captures it can try to guess the password offline (a dictionary attack). <strong>WPA3‑SAE</strong> uses a password‑authenticated key exchange (Dragonfly), which stops offline guessing and gives forward secrecy. Enterprise networks use <strong>802.1X</strong> with a per‑user login through a RADIUS server instead of one shared password.</p>`)}
+`,
+    quiz: [
+      { q: 'Which 2.4 GHz channels don’t overlap?', a: ['1, 2, 3', '1, 6, 11', '1, 7, 13', 'All of them'], c: 1, why: 'Each channel is ~20 MHz wide but spaced 5 MHz apart, so only 1, 6 and 11 are clear of each other.' },
+      { q: 'Which RSSI is the strongest signal?', a: ['−85 dBm', '−70 dBm', '−45 dBm', '−95 dBm'], c: 2, why: 'dBm values closer to zero are stronger; −45 dBm is excellent.' },
+      { q: 'Why does speed drop far from the access point?', a: ['The router throttles you', 'Lower SNR forces slower, more robust modulation', 'DHCP renews', 'IP packets get bigger'], c: 1, why: 'With less margin above the noise, the radio must use fewer bits per symbol to stay error-free.' },
     ],
   },
 
@@ -590,6 +650,93 @@ ${deep('VPNs: tunnels with encryption', `
       { q: 'What does PAT/NAPT change in outgoing packets?', a: ['Only destination IP', 'Source IP and source port', 'The TTL', 'The MAC address only'], c: 1, why: 'It rewrites the private source IP:port to the public IP and a unique port, then tracks the mapping.' },
       { q: 'Firewall rules are usually evaluated…', a: ['Randomly', 'Bottom to top', 'Top to bottom, first match wins', 'All at once, majority wins'], c: 2, why: 'Order matters: the first matching rule decides, which is why default-deny goes last.' },
       { q: 'Which technique relays WebRTC media when hole punching fails?', a: ['STUN', 'TURN', 'DHCP', 'ARP'], c: 1, why: 'TURN servers relay the traffic when direct peer-to-peer paths can’t be established.' },
+    ],
+  },
+  /* ============================================================ */
+  {
+    id: 'troubleshooting', level: 'pro', icon: '🩺', color: '#5cf2c2', minutes: 15,
+    title: 'Troubleshooting like a pro',
+    summary: 'ping, traceroute, dig, curl and friends: diagnose any network problem in a real terminal.',
+    body: `
+<h2 id="method">A method, not a guess</h2>
+<p>When "the Internet is down", pros don’t reboot things at random. They walk the stack <strong>bottom‑up</strong> and ask one question per layer. The first layer that fails is where the problem is.</p>
+<div class="tbl-wrap"><table class="tbl">
+<tr><th>Question</th><th>Layer</th><th>Tool</th></tr>
+<tr><td>Am I connected, and do I have an IP address?</td><td>1–3</td><td><code>ip addr</code> / <code>ipconfig</code></td></tr>
+<tr><td>Can I reach my gateway?</td><td>2–3</td><td><code>ping 192.168.1.1</code>, <code>arp -a</code></td></tr>
+<tr><td>Can I reach the Internet by IP?</td><td>3</td><td><code>ping 1.1.1.1</code>, <code>traceroute</code></td></tr>
+<tr><td>Do names resolve?</td><td>7 (DNS)</td><td><code>dig</code>, <code>nslookup</code></td></tr>
+<tr><td>Is the service answering?</td><td>4–7</td><td><code>nc -zv host 443</code>, <code>curl -I</code></td></tr>
+</table></div>
+${analogy('A doctor checks pulse, then breathing, then the specific symptom. "Can ping 1.1.1.1 but not google.com" is a symptom that points straight at DNS.')}
+
+<h2 id="terminal">Your terminal</h2>
+<p>This is a simulated Linux laptop on a home network. Try the missions on the right; type <code>help</code> for every command. Use <kbd>↑</kbd> for history and <kbd>Tab</kbd> to autocomplete.</p>
+<div data-widget="terminal"></div>
+
+<h2 id="reading">Reading the output</h2>
+<ul>
+<li><strong>ping</strong>: <code>time=</code> is the round‑trip time and <code>ttl=</code> is the remaining TTL. A starting value of 64 (Linux/macOS) or 128 (Windows) minus the hops tells you roughly how far away the host is.</li>
+<li><strong>traceroute</strong>: <code>* * *</code> doesn’t always mean broken; many routers simply don’t answer probes. Worry only if the destination itself doesn’t answer.</li>
+<li><strong>dig</strong>: check <code>status: NOERROR</code> vs <code>NXDOMAIN</code> (the name doesn’t exist) vs <code>SERVFAIL</code> (the resolver couldn’t get an answer).</li>
+<li><strong>curl -I</strong>: shows HTTP status and headers without downloading the page body.</li>
+</ul>
+
+${deep('Packet capture: tcpdump and Wireshark', `
+<p>When the tools above aren’t enough, look at the packets themselves. <code>tcpdump</code> captures from the command line:</p>
+<pre class="code"><span class="k">$</span> sudo tcpdump -i eth0 -n 'tcp port 443 and host 93.184.215.14'
+<span class="c">12:00:01.000 IP 192.168.1.42.51514 > 93.184.215.14.443: Flags [S], seq 1</span>
+<span class="c">12:00:01.018 IP 93.184.215.14.443 > 192.168.1.42.51514: Flags [S.], seq 9, ack 2</span>
+<span class="c">12:00:01.018 IP 192.168.1.42.51514 > 93.184.215.14.443: Flags [.], ack 10</span></pre>
+<p>There’s the three‑way handshake: <code>[S]</code> SYN, <code>[S.]</code> SYN‑ACK, <code>[.]</code> ACK. <strong>Wireshark</strong> opens the same captures in a GUI and decodes hundreds of protocols layer by layer. It’s the single best tool for learning networking.</p>`)}
+${deep('MTU problems: when small pages load but big ones hang', `
+<p>A classic mystery: SSH logins work, small pages load, but big downloads stall. Often a tunnel (VPN, PPPoE) lowers the path <strong>MTU</strong>, and a firewall blocks the ICMP "Fragmentation Needed" messages that <strong>Path MTU Discovery</strong> relies on. Big packets vanish silently, creating a "black hole". Test it with <code>ping -M do -s 1472 host</code> (1472 + 28 bytes of headers = 1500). The fix is to allow ICMP or clamp the TCP MSS on the router.</p>`)}
+`,
+    quiz: [
+      { q: 'You can ping 1.1.1.1 but not example.com. What is most likely broken?', a: ['The cable', 'DNS', 'TCP', 'The default gateway'], c: 1, why: 'Reaching an IP proves routing works; failing on a name points at name resolution.' },
+      { q: 'A Linux host replies with ttl=57. About how many hops away is it?', a: ['57', '7', '64', '121'], c: 1, why: 'Linux starts at 64; 64 − 57 = 7 routers decremented it.' },
+      { q: 'What does dig status NXDOMAIN mean?', a: ['Server crashed', 'The domain name does not exist', 'Timeout', 'The answer is cached'], c: 1, why: 'NXDOMAIN = Non-eXistent DOMAIN, an authoritative “no such name”.' },
+    ],
+  },
+
+  /* ============================================================ */
+  {
+    id: 'scale', level: 'pro', icon: '⚖️', color: '#ffd166', minutes: 12,
+    title: 'Load balancing, CDNs & scale',
+    summary: 'How the biggest sites serve billions: load balancers, health checks, caching and edge networks.',
+    body: `
+<h2 id="one-server">One server is never enough</h2>
+<p>A single server is a single point of failure, and it has a capacity limit. Big services spread traffic across many identical servers behind a <strong>load balancer</strong> (LB). Clients connect to one address (a <em>virtual IP</em>), and the LB picks a healthy backend for each connection or request.</p>
+${analogy('A load balancer is the host at a busy restaurant. Instead of letting every guest crowd the first waiter, they seat each party with whoever is free, and stop seating anyone at a table whose waiter called in sick.')}
+
+<h2 id="algorithms">Balancing algorithms</h2>
+<ul>
+<li><strong>Round robin</strong>: 1, 2, 3, 1, 2, 3… Simple, but ignores how busy each server is.</li>
+<li><strong>Weighted</strong>: bigger servers get proportionally more.</li>
+<li><strong>Least connections</strong>: send to whoever has the fewest active requests, which adapts to slow servers.</li>
+<li><strong>Hash (IP or cookie)</strong>: the same client always lands on the same server ("sticky sessions").</li>
+</ul>
+<p>Run the simulator. Then make server B slow and compare round robin to least connections. Kill a server and watch the <strong>health checks</strong> take it out of rotation.</p>
+<div data-widget="loadbalancer"></div>
+
+<h2 id="l4-l7">Layer 4 vs layer 7</h2>
+<p>An <strong>L4</strong> load balancer only looks at IPs and ports, so it is blazingly fast and protocol‑agnostic. An <strong>L7</strong> load balancer (reverse proxy) understands HTTP. It can route <code>/api</code> to one pool and <code>/images</code> to another, terminate TLS, add headers and retry failed requests. Most websites use both: L4 at the edge, L7 behind it.</p>
+
+<h2 id="cdn">CDNs: bring the content closer</h2>
+<p>Latency is bound by the speed of light. A <strong>Content Delivery Network</strong> keeps copies of content on servers in hundreds of cities. With <strong>anycast</strong> or DNS steering, you hit the nearest <em>edge</em>. If it has the file cached (a <em>hit</em>), the answer comes back in a few milliseconds. On a <em>miss</em>, the edge fetches it from the <strong>origin</strong> once and serves everyone after that.</p>
+${note('The <code>Cache-Control</code> header tells caches how long a response may be reused. <code>max-age=31536000, immutable</code> on fingerprinted files like <code>app.3f9a.js</code> lets browsers and CDNs keep them for a year.')}
+
+${deep('Consistent hashing: adding servers without reshuffling everything', `
+<p>With naive hashing (<code>server = hash(key) % N</code>), adding one server changes <code>N</code> and remaps almost every key, so caches go cold everywhere at once. <strong>Consistent hashing</strong> places servers and keys on a ring; each key goes to the next server clockwise. Adding or removing a server only moves the keys in its arc, about 1/N of them. <em>Virtual nodes</em> (many points per server) even out the load. This idea powers CDNs, distributed caches and databases like Cassandra and DynamoDB.</p>`)}
+${deep('Health checks, failover and the thundering herd', `
+<p>LBs probe backends (for example <code>GET /healthz</code> every 2 s) and pull one out after N failures. Careful design matters. If health checks call a shared database and the database slows down, <em>every</em> server fails its check at once and the LB marks the whole fleet dead. When a cache expires, thousands of requests may hit the origin simultaneously (a <strong>thundering herd</strong>). Request coalescing, jittered expiry and "serve stale while revalidating" smooth it out.</p>`)}
+${deep('Global traffic: DNS, anycast and BGP working together', `
+<p>A request to a global service is steered three times: <strong>GeoDNS</strong> or <strong>anycast</strong> picks a region, an L4 LB in that data centre spreads flows across machines with ECMP and consistent hashing, and an L7 proxy routes the HTTP request to the right microservice. If a whole region fails, DNS or BGP announcements shift users elsewhere within seconds to minutes.</p>`)}
+`,
+    quiz: [
+      { q: 'One backend becomes much slower. Which algorithm adapts automatically?', a: ['Round robin', 'Least connections', 'IP hash', 'Random'], c: 1, why: 'A slow server accumulates open requests, so least-connections sends it fewer new ones.' },
+      { q: 'What does a CDN cache “miss” cause?', a: ['An error page', 'The edge fetches from the origin', 'A DNS lookup', 'A TCP reset'], c: 1, why: 'On a miss the edge retrieves the object from the origin, caches it and serves it.' },
+      { q: 'Which can route /api and /images to different server pools?', a: ['An L4 load balancer', 'An L7 load balancer', 'A switch', 'ARP'], c: 1, why: 'Only an L7 (HTTP-aware) load balancer can read the URL path.' },
     ],
   },
 ];

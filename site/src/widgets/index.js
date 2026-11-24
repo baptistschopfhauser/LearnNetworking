@@ -2,11 +2,14 @@ import { topology, osi, signal, bits } from './basics.js';
 import { subnet, subnetPractice, switchSim, lpm, dijkstra } from './addressing.js';
 import { tcp, cwnd } from './transport.js';
 import { dns, http, tls, nat, firewall } from './apps.js';
+import { terminal } from './terminal.js';
+import { wifi, loadbalancer } from './pro.js';
 
 export const WIDGETS = {
   topology, osi, signal, bits,
   subnet, 'subnet-practice': subnetPractice, switch: switchSim, lpm, dijkstra,
   tcp, cwnd, dns, http, tls, nat, firewall,
+  terminal, wifi, loadbalancer,
 };
 
 /** Replace every [data-widget] placeholder inside root with its live widget. */
