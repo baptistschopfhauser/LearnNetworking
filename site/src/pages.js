@@ -206,14 +206,14 @@ export function module(app, id) {
 
 function renderQuiz(root, m) {
   const answered = new Array(m.quiz.length).fill(null);
-  root.innerHTML = m.quiz.map((q, qi) => `<div class="quiz-q" data-q="${qi}"><div class="q">${qi + 1}. ${esc(q.q)}</div><div class="quiz-opts">${q.a.map((a, ai) => `<button class="quiz-opt" data-a="${ai}">${esc(a)}</button>`).join('')}</div></div>`).join('') + '<div id="quiz-result"></div>';
+  root.innerHTML = m.quiz.map((q, qi) => `<div class="quiz-q" data-q="${qi}"><div class="q">${qi + 1}. ${esc(q.q)}</div><div class="quiz-opts">${shuffle(q.a.map((a, ai) => `<button class="quiz-opt" data-a="${ai}">${esc(a)}</button>`)).join('')}</div></div>`).join('') + '<div id="quiz-result"></div>';
   root.addEventListener('click', (e) => {
     const b = e.target.closest('.quiz-opt'); if (!b) return;
     const qEl = b.closest('.quiz-q'); const qi = +qEl.dataset.q; const ai = +b.dataset.a;
     if (answered[qi] !== null) return;
     const q = m.quiz[qi];
     answered[qi] = ai === q.c;
-    $$('.quiz-opt', qEl).forEach((o, i) => { o.disabled = true; if (i === q.c) o.classList.add('right'); else if (i === ai) o.classList.add('wrong'); });
+    $$('.quiz-opt', qEl).forEach((o) => { const i = +o.dataset.a; o.disabled = true; if (i === q.c) o.classList.add('right'); else if (i === ai) o.classList.add('wrong'); });
     qEl.insertAdjacentHTML('beforeend', `<div class="quiz-explain">${answered[qi] ? '✓ ' : '✗ '}${esc(q.why)}</div>`);
     if (answered.every((x) => x !== null)) {
       const ok = answered.filter(Boolean).length;

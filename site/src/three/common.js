@@ -20,7 +20,8 @@ export function webglOK() {
  */
 export function createStage(canvas, { fov = 55, bloom = 1.1, bloomRadius = 0.6, bloomThreshold = 0.1, fog = 0x03050a, fogDensity = 0.018 } = {}) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+  // phones: high DPR + bloom is the main cost of every frame, so cap it lower on touch screens
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, matchMedia('(pointer: coarse)').matches ? 1.25 : 1.75));
   renderer.setClearColor(0x03050a, 1);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
