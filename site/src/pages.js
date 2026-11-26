@@ -25,6 +25,24 @@ export const GAMES = [
       <rect x="24" y="118" width="32" height="20" rx="3" fill="#161d36" stroke="#5cf2c2"/><rect x="270" y="104" width="30" height="30" rx="3" fill="#161d36" stroke="#ff7a45"/>
       ${[[120, 120, '#8b7bff'], [180, 40, '#ffd166'], [230, 45, '#ffd166'], [270, 60, '#ffd166'], [200, 110, '#4cc9ff']].map(([x, y, c]) => `<circle cx="${x}" cy="${y}" r="6" fill="#161d36" stroke="${c}" stroke-width="2"/>`).join('')}
       <text x="274" y="96" font-size="14">🔒</text></svg>` },
+  { id: 'builder', title: tr('Network Builder', 'Netzwerk-Baukasten'), tag: tr('Design · 3D', 'Bauen · 3D'), color: 'var(--mint)', blurb: tr('Place switches and routers, run cables and solve five missions — from a first LAN to a redundant office with a DMZ. Subnets light up as you build.', 'Setz Switches und Router, zieh Kabel und löse fünf Missionen – vom ersten LAN bis zum ausfallsicheren Büro mit DMZ. Subnetze leuchten beim Bauen auf.'), module: 'switching',
+    art: `<svg viewBox="0 0 320 180"><rect width="320" height="180" fill="#070a16"/>
+      ${Array.from({ length: 40 }, (_, i) => `<rect x="${20 + (i % 10) * 28}" y="${30 + Math.floor(i / 10) * 30}" width="24" height="24" rx="3" fill="${[0, 1, 10, 11, 20, 21].includes(i) ? '#5cf2c233' : [8, 9, 18, 19].includes(i) ? '#ff7a4533' : '#141b33'}"/>`).join('')}
+      <path d="M32 42 L88 72 M32 102 L88 72 M88 72 L172 72 M172 72 L260 72" stroke="#5cf2c2" stroke-width="2.5" fill="none"/>
+      <rect x="78" y="66" width="22" height="12" rx="2" fill="#1a2240" stroke="#5cf2c2"/><circle cx="172" cy="72" r="9" fill="#1a2240" stroke="#8b7bff" stroke-width="2"/>
+      <circle cx="262" cy="70" r="14" fill="none" stroke="#4cc9ff" stroke-dasharray="3 3"/><text x="252" y="75" font-size="12">☁</text>
+      <circle r="4" fill="#fff"><animateMotion dur="2.2s" repeatCount="indefinite" path="M32 42 L88 72 L172 72 L260 72"/></circle></svg>` },
+  { id: 'blocks', title: tr('Subnet Blocks', 'Subnetz-Blöcke'), tag: 'Subnetting', color: 'var(--orange)', blurb: tr('A /24 as a 3D board of 256 addresses. Pick the right prefix for every team and fit aligned blocks together without wasting space.', 'Ein /24 als 3D-Brett mit 256 Adressen. Wähle für jedes Team das passende Präfix und setze ausgerichtete Blöcke platzsparend zusammen.'), module: 'subnetting',
+    art: `<svg viewBox="0 0 320 180"><rect width="320" height="180" fill="#070a16"/>
+      <g transform="translate(96 22)">${Array.from({ length: 64 }, (_, i) => `<rect x="${(i % 8) * 16}" y="${Math.floor(i / 8) * 17}" width="14" height="15" rx="2" fill="#141b33"/>`).join('')}
+      <rect x="0" y="0" width="126" height="66" rx="3" fill="#5cf2c2" opacity=".75"/><rect x="0" y="68" width="62" height="32" rx="3" fill="#8b7bff" opacity=".8"/><rect x="64" y="68" width="30" height="15" rx="3" fill="#ff7a45" opacity=".85"/>
+      <rect x="64" y="102" width="30" height="15" rx="3" fill="none" stroke="#ffd166" stroke-width="2" stroke-dasharray="3 2"><animate attributeName="y" values="102;85;102" dur="1.6s" repeatCount="indefinite"/></rect></g>
+      <text x="20" y="40" fill="#7c86a2" font-family="monospace" font-size="11">/25</text><text x="20" y="100" fill="#7c86a2" font-family="monospace" font-size="11">/26</text><text x="20" y="120" fill="#7c86a2" font-family="monospace" font-size="11">/28</text></svg>` },
+  { id: 'dnsdet', title: tr('DNS Detective', 'DNS-Detektiv'), tag: tr('Troubleshooting', 'Fehlersuche'), color: 'var(--yellow)', blurb: tr('Seven real-world DNS outages. Inspect caches, zone files and registry data, accuse the guilty server and pick the fix.', 'Sieben echte DNS-Störungen. Untersuche Caches, Zonendateien und Registry-Daten, überführe den schuldigen Server und wähle die Lösung.'), module: 'dns',
+    art: `<svg viewBox="0 0 320 180"><rect width="320" height="180" fill="#070a16"/>
+      ${[[50, 120, '#5cf2c2'], [120, 90, '#ffd166'], [190, 40, '#ffd166'], [250, 70, '#ffd166'], [260, 130, '#ff7a45']].map(([x, y, c]) => `<rect x="${x - 14}" y="${y - 14}" width="28" height="28" rx="4" fill="#161d36" stroke="${c}" stroke-width="2"/>`).join('')}
+      <path d="M50 120 L120 90 L190 40 M120 90 L250 70 M120 90 L260 130" stroke="#2c3a6a" stroke-width="2" stroke-dasharray="4 3" fill="none"/>
+      <g><circle cx="230" cy="110" r="22" fill="none" stroke="#e9edf7" stroke-width="4"/><line x1="246" y1="126" x2="268" y2="150" stroke="#e9edf7" stroke-width="6" stroke-linecap="round"/><animateTransform attributeName="transform" type="translate" values="0 0;-110 -20;-40 -70;0 0" dur="5s" repeatCount="indefinite"/></g></svg>` },
   { id: 'runner', title: 'Packet Runner', tag: 'Routing', color: 'var(--mint)', blurb: tr('You are an IP packet. Read routing tables, apply longest-prefix match, and reach your destination before TTL hits zero.', 'Du bist ein IP-Paket. Lies Routingtabellen, wende Longest-Prefix-Match an und erreiche dein Ziel, bevor die TTL null wird.'), module: 'routing',
     art: `<svg viewBox="0 0 320 180"><defs><radialGradient id="ga" cx="50%" cy="50%"><stop offset="0" stop-color="#1b2150"/><stop offset="1" stop-color="#05070f"/></radialGradient></defs><rect width="320" height="180" fill="url(#ga)"/>
       <g stroke="#3a4a80" stroke-width="1.5"><line x1="40" y1="90" x2="110" y2="50"/><line x1="40" y1="90" x2="110" y2="130"/><line x1="110" y1="50" x2="190" y2="70"/><line x1="110" y1="130" x2="190" y2="70"/><line x1="110" y1="130" x2="190" y2="140"/><line x1="190" y1="70" x2="270" y2="95"/><line x1="190" y1="140" x2="270" y2="95"/></g>
@@ -242,7 +260,7 @@ function renderQuiz(root, m) {
 export function play(app) {
   app.innerHTML = `<div class="wrap page-enter" style="padding-top:56px;padding-bottom:80px">
     <div class="eyebrow">Arcade</div><h1 style="font-size:clamp(2.2rem,5vw,3.6rem)">${tr('Playable 3D', 'Spielbares 3D')}</h1>
-    <p class="lead">${tr('Each game is built around a real networking skill. Drag to orbit, pinch or scroll to zoom, number keys to answer.', 'Jedes Spiel trainiert eine echte Netzwerk-Fähigkeit. Ziehen zum Drehen, Pinch oder Mausrad zum Zoomen, Zahlentasten zum Antworten.')}</p>
+    <p class="lead">${tr(`${GAMES.length - 1} games and a 3D story, each built around a real networking skill. Drag to orbit, pinch or scroll to zoom, number keys to answer.`, `${GAMES.length - 1} Spiele und eine 3D-Story, jedes Erlebnis trainiert eine echte Netzwerk-Fähigkeit. Ziehen zum Drehen, Pinch oder Mausrad zum Zoomen, Zahlentasten zum Antworten.`)}</p>
     ${webglOK() ? '' : `<div class="callout warn"><span class="ci">⚠</span><div><p>${tr('Your browser doesn’t seem to support WebGL, which the 3D games need.', 'Dein Browser scheint kein WebGL zu unterstützen, das die 3D-Spiele brauchen.')}</p></div></div>`}
     <div class="games-grid" style="margin-top:32px">${GAMES.map((g) => `<a class="card hover game-card" href="#/play/${g.id}">
       <div class="art">${g.art}</div>
@@ -263,7 +281,7 @@ export async function game(app, id) {
   const shell = $('.game-shell', app);
   $('.game-mute', shell).onclick = (e) => { e.currentTarget.textContent = sfx.toggle() ? '🔇' : '🔊'; sfx.play('click'); };
   if (!webglOK()) { shell.innerHTML = `<div class="overlay"><div class="panel"><h2>${tr('WebGL unavailable', 'WebGL nicht verfügbar')}</h2><p>${tr('This game needs WebGL. Try a recent Chrome, Firefox, Safari or Edge.', 'Dieses Spiel braucht WebGL. Probier einen aktuellen Chrome, Firefox, Safari oder Edge.')}</p><a class="btn" href="#/play">${tr('Back', 'Zurück')}</a></div></div>`; return; }
-  const loaders = { runner: () => import('./three/runner.js').then((m) => m.mountRunner), tower: () => import('./three/tower.js').then((m) => m.mountTower), defender: () => import('./three/defender.js').then((m) => m.mountDefender), journey: () => import('./three/journey.js').then((m) => m.mountJourney) };
+  const loaders = { runner: () => import('./three/runner.js').then((m) => m.mountRunner), tower: () => import('./three/tower.js').then((m) => m.mountTower), defender: () => import('./three/defender.js').then((m) => m.mountDefender), journey: () => import('./three/journey.js').then((m) => m.mountJourney), builder: () => import('./three/builder.js').then((m) => m.mountBuilder), blocks: () => import('./three/subnetblocks.js').then((m) => m.mountSubnetBlocks), dnsdet: () => import('./three/dnsdetective.js').then((m) => m.mountDnsDetective) };
   const mount = await loaders[id]();
   if (!document.body.contains(shell)) return; // navigated away while loading
   mount(shell);
@@ -436,6 +454,9 @@ export const BADGES = [
   { icon: '⌨️', name: tr('Terminal master', 'Terminal-Meister'), desc: tr('Finish every terminal mission', 'Alle Terminal-Missionen'), test: () => has('term-all') },
   { icon: '🔥', name: tr('Firewall architect', 'Firewall-Architekt'), desc: tr('Solve the firewall puzzle with ≤ 4 rules', 'Firewall-Rätsel mit ≤ 4 Regeln lösen'), test: () => has('fw-lean') },
   { icon: '⚖️', name: tr('Traffic cop', 'Verkehrspolizist'), desc: tr('Tame a slow server with least-connections', 'Langsamen Server mit Least-Connections bändigen'), test: () => has('lb-lc') },
+  { icon: '🏗', name: tr('Network architect', 'Netzwerk-Architekt'), desc: tr('Finish all Network Builder missions', 'Alle Baukasten-Missionen schaffen'), test: () => has('builder-win') },
+  { icon: '🧱', name: tr('Address architect', 'Adress-Architekt'), desc: tr('Finish Subnet Blocks', 'Subnetz-Blöcke durchspielen'), test: () => has('blocks-win') },
+  { icon: '🕵', name: tr('DNS detective', 'DNS-Detektiv'), desc: tr('Solve every DNS case', 'Alle DNS-Fälle lösen'), test: () => has('dnsdet-win') },
   { icon: '🧙', name: tr('Network wizard', 'Netzwerk-Magier'), desc: tr('10+ correct in the Challenge', '10+ richtig in der Challenge'), test: () => has('challenge-10') },
   { icon: '🌐', name: tr('Status collector', 'Statuscode-Sammler'), desc: tr('Find all 9 HTTP status codes', 'Alle 9 HTTP-Statuscodes finden'), test: () => has('http-9') },
 ];

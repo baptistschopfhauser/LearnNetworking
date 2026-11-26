@@ -567,3 +567,10 @@ body:has(.game-shell) #toast-root { top: calc(var(--topbar-h) + 84px); bottom: a
 .em-check small { grid-column: 1 / -1; color: var(--text-dim); }
 .em-check.ok { border-color: rgba(92,242,194,.45); } .em-check.ok span { color: var(--mint); }
 .em-check.bad { border-color: rgba(255,84,112,.45); } .em-check.bad span { color: var(--danger); }
+
+/* ---------- new games ---------- */
+.label3d.row { background: transparent; border: 0; color: var(--muted); font-size: .62rem; }
+.hop-btn.on { border-color: var(--mint); color: var(--mint); background: rgba(92,242,194,.1); }
+.b-checks { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; font: .85rem var(--font-body); }
+.b-checks li { color: var(--text-dim); }
+.b-checks li.ok { color: var(--mint); }
