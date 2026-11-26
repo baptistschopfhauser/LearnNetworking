@@ -538,4 +538,6 @@ a.xp-chip:hover { border-color: var(--mint); }
   .certificate h1 { color: #111; -webkit-text-fill-color: #111; background: none; }
 }
 .game-mute { position: absolute; left: 112px; bottom: 16px; z-index: 6; background: rgba(8,11,22,.8); }
-@media (max-width: 760px) { .game-mute { top: 10px; right: 104px; left: auto; bottom: auto; padding: 6px 10px; font-size: .78rem; } }
+@media (max-width: 760px) { .game-mute { top: 50px; right: 10px; left: auto; bottom: auto; padding: 6px 10px; font-size: .78rem; } }
+/* inside games the bottom edge holds the answer buttons, so toasts drop in from the top */
+body:has(.game-shell) #toast-root { top: calc(var(--topbar-h) + 84px); bottom: auto; }

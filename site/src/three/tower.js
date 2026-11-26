@@ -1,41 +1,49 @@
-import { THREE, createStage, starfield, glowSprite, C3, toScreen, gridFloor, easeInOut } from './common.js';
+import { THREE, createStage, starfield, glowSprite, C3, toScreen, gridFloor, easeInOut, orbit, isMobile, sfx, burst } from './common.js';
 import { loop, onCleanup, shuffle, pick, store, h, $, esc } from '../core.js';
+import { tr } from '../i18n.js';
+import { flag } from '../srs.js';
 
 const LAYERS = [
-  { key: 'app', name: 'Application', color: '#ff5c9a' },
-  { key: 'tr', name: 'Transport', color: '#5cf2c2' },
-  { key: 'net', name: 'Network', color: '#4cc9ff' },
-  { key: 'link', name: 'Link', color: '#8b7bff' },
+  { key: 'app', full: tr('Application layer', 'Anwendungsschicht'), name: tr('Application', 'Anwendung'), color: '#ff5c9a', hint: tr('The application layer carries the message itself (HTTP, DNS, SMTP…), or nothing if a tool talks to a lower layer directly.', 'Die Anwendungsschicht trägt die Nachricht selbst (HTTP, DNS, SMTP …) – oder nichts, wenn ein Werkzeug direkt mit einer tieferen Schicht spricht.') },
+  { key: 'tr', full: tr('Transport layer', 'Transportschicht'), name: 'Transport', color: '#5cf2c2', hint: tr('The transport layer adds ports: TCP for reliable streams, UDP for quick datagrams.', 'Die Transportschicht fügt Ports hinzu: TCP für zuverlässige Ströme, UDP für schnelle Datagramme.') },
+  { key: 'net', full: tr('Network layer', 'Vermittlungsschicht'), name: tr('Network', 'Vermittlung'), color: '#4cc9ff', hint: tr('The network layer adds IP addresses (IPv4 or IPv6) and says which transport is inside.', 'Die Vermittlungsschicht fügt IP-Adressen hinzu (IPv4 oder IPv6) und sagt, welcher Transport drin steckt.') },
+  { key: 'link', full: tr('Link layer', 'Sicherungsschicht'), name: tr('Link', 'Sicherung'), color: '#8b7bff', hint: tr('The link layer wraps everything in a frame for the next hop: Ethernet or Wi‑Fi, with MAC addresses.', 'Die Sicherungsschicht verpackt alles in einen Rahmen für den nächsten Hop: Ethernet oder WLAN, mit MAC-Adressen.') },
 ];
 
+const P = {
+  web: tr('Web server (nginx)', 'Webserver (nginx)'), dns: tr('DNS resolver', 'DNS-Resolver'), mail: tr('Mail server (SMTP)', 'Mailserver (SMTP)'),
+  call: tr('Video call app (WebRTC)', 'Videocall-App (WebRTC)'), ssh: tr('SSH daemon', 'SSH-Dienst (sshd)'), icmp: tr('Kernel ICMP handler', 'ICMP-Handler im Kernel'),
+  vpn: tr('WireGuard VPN', 'WireGuard-VPN'), h3: tr('Web server (HTTP/3)', 'Webserver (HTTP/3)'),
+};
+const ETH4 = tr('EtherType 0x0800 → IPv4', 'EtherType 0x0800 → IPv4'), ETH6 = 'EtherType 0x86DD → IPv6';
 const SCENARIOS = [
-  {
-    id: 'web', title: 'Load a web page', icon: '🌐', payload: 'GET /index.html',
-    app: 'HTTP GET /index.html (inside TLS)', tr: 'TCP 51514 → 443, SEQ 1, ACK 1', net: 'IPv4 192.168.1.10 → 93.184.215.14, proto 6', link: 'Ethernet → gateway MAC, type 0x0800',
-    port: 443, program: 'Web server (nginx)', proto: 'Protocol 6 → TCP', ethertype: 'EtherType 0x0800 → IPv4',
-  },
-  {
-    id: 'dns', title: 'Look up a name', icon: '📇', payload: 'A? example.com',
-    app: 'DNS query: A example.com', tr: 'UDP 53001 → 53', net: 'IPv4 192.168.1.10 → 1.1.1.1, proto 17', link: 'Wi‑Fi 802.11 frame → access point',
-    port: 53, program: 'DNS resolver', proto: 'Protocol 17 → UDP', ethertype: 'EtherType 0x0800 → IPv4',
-  },
-  {
-    id: 'mail', title: 'Send an email (IPv6)', icon: '✉️', payload: 'MAIL FROM:<ada@lovelace.org>',
-    app: 'SMTP MAIL FROM:<ada@…>', tr: 'TCP 60123 → 587, SYN done', net: 'IPv6 2001:db8::5 → 2001:db8::25, next‑hdr 6', link: 'Ethernet → router MAC, type 0x86DD',
-    port: 587, program: 'Mail server (SMTP)', proto: 'Next Header 6 → TCP', ethertype: 'EtherType 0x86DD → IPv6',
-  },
-  {
-    id: 'call', title: 'Join a video call', icon: '🎥', payload: '[20 ms of audio]',
-    app: 'RTP media frame (SRTP encrypted)', tr: 'UDP 50000 → 3478', net: 'IPv4 10.0.0.7 → 142.250.0.10, proto 17', link: 'Wi‑Fi 802.11 frame → access point',
-    port: 3478, program: 'Video call app (WebRTC)', proto: 'Protocol 17 → UDP', ethertype: 'EtherType 0x0800 → IPv4',
-  },
-  {
-    id: 'ping', title: 'Ping a server', icon: '📡', payload: 'echo request #7',
-    app: 'No app header — the ping tool builds ICMP directly', tr: 'None — ICMP rides directly inside IP', net: 'IPv4 → 8.8.8.8, proto 1 + ICMP Echo Request', link: 'Ethernet → gateway MAC, type 0x0800',
-    port: null, program: 'Kernel ICMP handler', proto: 'Protocol 1 → ICMP', ethertype: 'EtherType 0x0800 → IPv4',
-  },
+  { id: 'web', title: tr('Load a web page', 'Webseite laden'), icon: '🌐', payload: 'GET /index.html',
+    app: tr('HTTP GET /index.html (inside TLS)', 'HTTP GET /index.html (in TLS)'), tr: 'TCP 51514 → 443, SEQ 1, ACK 1', net: 'IPv4 192.168.1.10 → 93.184.215.14, proto 6', link: tr('Ethernet → gateway MAC, type 0x0800', 'Ethernet → Gateway-MAC, Typ 0x0800'),
+    port: 443, program: P.web, proto: 'Protocol 6 → TCP', ethertype: ETH4 },
+  { id: 'dns', title: tr('Look up a name', 'Namen auflösen'), icon: '📇', payload: 'A? example.com',
+    app: tr('DNS query: A example.com', 'DNS-Anfrage: A example.com'), tr: 'UDP 53001 → 53', net: 'IPv4 192.168.1.10 → 1.1.1.1, proto 17', link: tr('Wi‑Fi 802.11 frame → access point', 'WLAN-802.11-Rahmen → Access Point'),
+    port: 53, program: P.dns, proto: 'Protocol 17 → UDP', ethertype: ETH4 },
+  { id: 'mail', title: tr('Send an email (IPv6)', 'E-Mail senden (IPv6)'), icon: '✉️', payload: 'MAIL FROM:<ada@lovelace.org>',
+    app: 'SMTP MAIL FROM:<ada@…>', tr: 'TCP 60123 → 587', net: 'IPv6 2001:db8::5 → 2001:db8::25, next‑hdr 6', link: tr('Ethernet → router MAC, type 0x86DD', 'Ethernet → Router-MAC, Typ 0x86DD'),
+    port: 587, program: P.mail, proto: 'Next Header 6 → TCP', ethertype: ETH6 },
+  { id: 'call', title: tr('Join a video call', 'Videocall beitreten'), icon: '🎥', payload: tr('[20 ms of audio]', '[20 ms Audio]'),
+    app: tr('RTP media frame (SRTP encrypted)', 'RTP-Medienrahmen (SRTP-verschlüsselt)'), tr: 'UDP 50000 → 3478', net: 'IPv4 10.0.0.7 → 142.250.0.10, proto 17', link: tr('Wi‑Fi 802.11 frame → access point', 'WLAN-802.11-Rahmen → Access Point'),
+    port: 3478, program: P.call, proto: 'Protocol 17 → UDP', ethertype: ETH4 },
+  { id: 'ping', title: tr('Ping a server', 'Server anpingen'), icon: '📡', payload: 'echo request #7',
+    app: tr('No app header — the ping tool builds ICMP directly', 'Kein App-Header – ping baut ICMP direkt'), tr: tr('None — ICMP rides directly inside IP', 'Keiner – ICMP steckt direkt in IP'), net: 'IPv4 → 8.8.8.8, proto 1 + ICMP Echo Request', link: tr('Ethernet → gateway MAC, type 0x0800', 'Ethernet → Gateway-MAC, Typ 0x0800'),
+    port: null, program: P.icmp, proto: 'Protocol 1 → ICMP', ethertype: ETH4, none: ['app', 'tr'] },
+  { id: 'vpn', title: tr('Browse through a VPN', 'Über ein VPN surfen'), icon: '🔐', payload: tr('[encrypted inner IP packet]', '[verschlüsseltes inneres IP-Paket]'),
+    app: tr('WireGuard: encrypted inner packet (10.8.0.2 → 93.184.215.14)', 'WireGuard: verschlüsseltes inneres Paket (10.8.0.2 → 93.184.215.14)'), tr: 'UDP 51820 → 51820', net: 'IPv4 192.168.1.10 → 203.0.113.9 (VPN server), proto 17', link: tr('Wi‑Fi 802.11 frame → access point', 'WLAN-802.11-Rahmen → Access Point'),
+    port: 51820, program: P.vpn, proto: 'Protocol 17 → UDP', ethertype: ETH4 },
+  { id: 'ssh', title: tr('Log in with SSH', 'Per SSH einloggen'), icon: '🖥', payload: tr('[encrypted keystrokes]', '[verschlüsselte Tastendrücke]'),
+    app: tr('SSH packet (encrypted session)', 'SSH-Paket (verschlüsselte Sitzung)'), tr: 'TCP 49152 → 22', net: 'IPv4 10.0.0.7 → 10.0.0.20, proto 6', link: tr('Ethernet → server MAC (same LAN), type 0x0800', 'Ethernet → Server-MAC (gleiches LAN), Typ 0x0800'),
+    port: 22, program: P.ssh, proto: 'Protocol 6 → TCP', ethertype: ETH4 },
+  { id: 'h3', title: tr('Load a page over HTTP/3', 'Seite über HTTP/3 laden'), icon: '⚡', payload: 'GET / (HTTP/3)',
+    app: tr('HTTP/3 GET / inside QUIC (encrypted)', 'HTTP/3 GET / in QUIC (verschlüsselt)'), tr: 'UDP 55000 → 443 (QUIC)', net: 'IPv6 2001:db8::5 → 2606:2800::1, next‑hdr 17', link: tr('Ethernet → router MAC, type 0x86DD', 'Ethernet → Router-MAC, Typ 0x86DD'),
+    port: 443, program: P.h3, proto: 'Next Header 17 → UDP', ethertype: ETH6 },
 ];
-const PROGRAMS = ['Web server (nginx)', 'DNS resolver', 'Mail server (SMTP)', 'Video call app (WebRTC)', 'SSH daemon', 'Kernel ICMP handler'];
+const PROGRAMS = Object.values(P);
+const isNone = (sc, key) => (sc.none || []).includes(key);
 
 function encapQuestion(sc, layer) {
   const right = sc[layer.key];
@@ -43,23 +51,24 @@ function encapQuestion(sc, layer) {
   SCENARIOS.forEach((o) => { if (o[layer.key] !== right) pool.push(o[layer.key]); });
   LAYERS.forEach((l) => { if (l.key !== layer.key) pool.push(sc[l.key]); });
   const wrong = shuffle([...new Set(pool)].filter((x) => x !== right)).slice(0, 3);
-  return { q: `${layer.name} layer — which header gets added?`, opts: shuffle([right, ...wrong]), right };
+  return { q: tr(`${layer.full} — which header gets added?`, `${layer.full} – welcher Header kommt dazu?`), opts: shuffle([right, ...wrong]), right, hint: layer.hint };
 }
 function decapQuestion(sc, layer) {
   if (layer.key === 'link') {
     const right = sc.ethertype;
-    return { q: 'Link layer: dest MAC is ours. Which field says what is inside the frame?', opts: shuffle([right, sc.ethertype.includes('86DD') ? 'EtherType 0x0800 → IPv4' : 'EtherType 0x86DD → IPv6', 'TTL 64 → keep it', 'Dest port → hand to app']), right };
+    return { q: tr('Link layer: dest MAC is ours. Which field says what is inside the frame?', 'Sicherungsschicht: Ziel-MAC passt. Welches Feld sagt, was im Rahmen steckt?'), opts: shuffle([right, right === ETH6 ? ETH4 : ETH6, tr('TTL 64 → keep it', 'TTL 64 → behalten'), tr('Dest port → hand to app', 'Zielport → an die App')]), right, hint: tr('The EtherType field names the next protocol: 0x0800 = IPv4, 0x86DD = IPv6.', 'Das EtherType-Feld nennt das nächste Protokoll: 0x0800 = IPv4, 0x86DD = IPv6.') };
   }
   if (layer.key === 'net') {
     const right = sc.proto;
-    const all = ['Protocol 6 → TCP', 'Protocol 17 → UDP', 'Protocol 1 → ICMP', 'Next Header 6 → TCP'];
-    return { q: 'Network layer: dest IP is ours. Which transport gets the payload?', opts: shuffle([right, ...shuffle(all.filter((x) => x !== right && !(x.endsWith('TCP') && right.endsWith('TCP')))).slice(0, 2), 'Source MAC → reply']), right };
+    const all = ['Protocol 6 → TCP', 'Protocol 17 → UDP', 'Protocol 1 → ICMP', 'Next Header 6 → TCP', 'Next Header 17 → UDP'];
+    const sameKind = (x) => x.split('→')[1] === right.split('→')[1];
+    return { q: tr('Network layer: dest IP is ours. Which transport gets the payload?', 'Vermittlungsschicht: Ziel-IP passt. Welcher Transport bekommt die Nutzlast?'), opts: shuffle([right, ...shuffle(all.filter((x) => !sameKind(x))).slice(0, 2), tr('Source MAC → reply', 'Quell-MAC → antworten')]), right, hint: tr('IPv4’s Protocol field (IPv6: Next Header) says what’s inside: 6 = TCP, 17 = UDP, 1 = ICMP.', 'Das Protocol-Feld von IPv4 (IPv6: Next Header) sagt, was drin ist: 6 = TCP, 17 = UDP, 1 = ICMP.') };
   }
   if (layer.key === 'tr') {
     const right = sc.program;
-    return { q: sc.port ? `Transport layer: destination port ${sc.port}. Which program receives it?` : 'No transport header here. Who handles an ICMP Echo Request?', opts: shuffle([right, ...shuffle(PROGRAMS.filter((p) => p !== right)).slice(0, 3)]), right };
+    return { q: sc.port ? tr(`Transport layer: destination port ${sc.port}. Which program receives it?`, `Transportschicht: Zielport ${sc.port}. Welches Programm bekommt es?`) : tr('No transport header here. Who handles an ICMP Echo Request?', 'Hier gibt es keinen Transport-Header. Wer bearbeitet ein ICMP Echo Request?'), opts: shuffle([right, ...shuffle(PROGRAMS.filter((p) => p !== right)).slice(0, 3)]), right, hint: tr('Well-known ports: 22 SSH, 53 DNS, 443 HTTPS/QUIC, 587 mail submission, 3478 STUN/WebRTC, 51820 WireGuard.', 'Bekannte Ports: 22 SSH, 53 DNS, 443 HTTPS/QUIC, 587 Mail-Einlieferung, 3478 STUN/WebRTC, 51820 WireGuard.'), card: 'g:Port' };
   }
-  return { q: 'Application layer: what does the program finally read?', opts: shuffle([sc.payload, ...shuffle(SCENARIOS.filter((s) => s !== sc).map((s) => s.payload)).slice(0, 3)]), right: sc.payload };
+  return { q: tr('Application layer: what does the program finally read?', 'Anwendungsschicht: Was liest das Programm am Ende?'), opts: shuffle([sc.payload, ...shuffle(SCENARIOS.filter((s) => s !== sc).map((s) => s.payload)).slice(0, 3)]), right: sc.payload, hint: tr('After every header is stripped, only the original payload is left.', 'Wenn alle Header entfernt sind, bleibt nur die ursprüngliche Nutzlast übrig.') };
 }
 
 export function mountTower(shell) {
@@ -95,8 +104,8 @@ export function mountTower(shell) {
     const base = new THREE.Mesh(new THREE.BoxGeometry(10, 0.6, 10), new THREE.MeshStandardMaterial({ color: 0x0f1428, emissive: 0xb4bdd3, emissiveIntensity: 0.06 }));
     base.position.set(x, 0.3, 0);
     scene.add(base);
-    addLabel(new THREE.Vector3(x, -0.2, 6), `<span style="color:#b4bdd3">L1</span> Physical`);
-    addLabel(new THREE.Vector3(x, floorY(0) + FLOOR_H / 2 + 1.6, 0), ti ? '🖥 Receiver' : '💻 Sender', 'cur');
+    addLabel(new THREE.Vector3(x, -0.2, 6), `<span style="color:#b4bdd3">L1</span> ${tr('Physical', 'Bitübertragung')}`);
+    addLabel(new THREE.Vector3(x, floorY(0) + FLOOR_H / 2 + 1.6, 0), ti ? tr('🖥 Receiver', '🖥 Empfänger') : tr('💻 Sender', '💻 Sender'), 'cur');
   });
   // cable
   const cableCurve = new THREE.CatmullRomCurve3([new THREE.Vector3(towerX[0], 0.6, 0), new THREE.Vector3(-4, 0.4, 4), new THREE.Vector3(4, 0.4, -4), new THREE.Vector3(towerX[1], 0.6, 0)]);
@@ -140,16 +149,16 @@ export function mountTower(shell) {
   hud.innerHTML = '';
   labels.forEach((l) => hud.appendChild(l.el));
   const top = h(`<div class="hud hud-top">
-    <div class="hud-pill"><span>ROUND</span><b id="t-round">1/3</b></div>
-    <div class="hud-pill dest"><span>MISSION</span><b id="t-mission">—</b></div>
-    <div class="hud-pill"><span>SCORE</span><b id="t-score">0</b></div>
+    <div class="hud-pill"><span>${tr('ROUND', 'RUNDE')}</span><b id="t-round">1/3</b></div>
+    <div class="hud-pill dest"><span>${tr('MISSION', 'AUFTRAG')}</span><b id="t-mission">—</b></div>
+    <div class="hud-pill"><span>${tr('SCORE', 'PUNKTE')}</span><b id="t-score">0</b></div>
     <div class="hud-pill ttl"><span>COMBO</span><b id="t-combo">×1</b></div>
   </div>`);
   const qpanel = h(`<div class="hud" style="left:50%;bottom:20px;transform:translateX(-50%);width:min(680px,calc(100% - 32px))"><div class="hud-panel" id="t-q" style="display:none"></div></div>`);
-  const stackPanel = h(`<div class="hud hud-side" style="top:96px"><div class="hud-panel"><h4>Packet on the wire</h4><div class="packet-vis" id="t-stack" style="height:auto;min-height:44px;flex-wrap:wrap"></div><div id="t-note" style="font-size:.78rem"></div></div></div>`);
+  const stackPanel = h(`<div class="hud hud-side" style="top:96px"><div class="hud-panel"><h4>${tr('Packet on the wire', 'Paket auf der Leitung')}</h4><div class="packet-vis" id="t-stack" style="height:auto;min-height:44px;flex-wrap:wrap"></div><div id="t-note" style="font-size:.78rem"></div></div></div>`);
   const overlay = h(`<div class="overlay"></div>`);
   shell.append(top, qpanel, stackPanel, overlay);
-  if (window.innerWidth < 760) stackPanel.style.display = 'none';
+  if (isMobile()) stackPanel.style.display = 'none';
 
   let round = 0, score = 0, combo = 1, sc, phase = 'intro', step = 0, qStart = 0, wrongThis = 0, totalWrong = 0;
   const rounds = shuffle(SCENARIOS).slice(0, 3);
@@ -163,7 +172,7 @@ export function mountTower(shell) {
   function renderStack(note = '') {
     const parts = shells.map((s) => s.userData.layer);
     const hdrs = [...parts].reverse();
-    $('#t-stack', stackPanel).innerHTML = hdrs.map((l) => `<div style="background:${l.color};padding:6px 8px">${l.key === 'link' ? 'L2' : l.key === 'net' ? 'IP' : l.key === 'tr' ? (sc.tr.startsWith('UDP') ? 'UDP' : sc.tr.startsWith('TCP') ? 'TCP' : '—') : 'APP'}</div>`).join('') + `<div style="background:#e9edf7;flex:1;padding:6px 8px">${esc(sc.payload)}</div>${parts.some((p) => p.key === 'link') ? '<div style="background:#8b7bff;padding:6px 8px">FCS</div>' : ''}`;
+    $('#t-stack', stackPanel).innerHTML = hdrs.map((l) => `<div style="background:${l.color};padding:6px 8px">${l.key === 'link' ? 'L2' : l.key === 'net' ? 'IP' : l.key === 'tr' ? (sc.tr.slice(0, 3)) : 'APP'}</div>`).join('') + `<div style="background:#e9edf7;flex:1;padding:6px 8px">${esc(sc.payload)}</div>${parts.some((p) => p.key === 'link') ? '<div style="background:#8b7bff;padding:6px 8px">FCS</div>' : ''}`;
     $('#t-note', stackPanel).innerHTML = note;
   }
 
@@ -171,8 +180,9 @@ export function mountTower(shell) {
     const panel = $('#t-q', qpanel);
     panel.style.display = 'block';
     qStart = performance.now(); wrongThis = 0;
-    panel.innerHTML = `<h4>${phase === 'encap' ? '⬇ Encapsulate' : '⬆ Decapsulate'} · ${esc(sc.title)}</h4><div style="color:var(--text);font-weight:600;font-size:1rem;margin-bottom:10px;font-family:var(--font-body)">${esc(question.q)}</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px">${question.opts.map((o, i) => `<button class="hop-btn" style="justify-content:flex-start;text-align:left" data-o="${esc(o)}"><kbd>${i + 1}</kbd>${esc(o)}</button>`).join('')}</div>`;
+    panel.innerHTML = `<h4>${phase === 'encap' ? tr('⬇ Encapsulate', '⬇ Einpacken') : tr('⬆ Decapsulate', '⬆ Auspacken')} · ${esc(sc.title)}</h4><div style="color:var(--text);font-weight:600;font-size:1rem;margin-bottom:10px;font-family:var(--font-body)">${esc(question.q)}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px">${question.opts.map((o, i) => `<button class="hop-btn" style="justify-content:flex-start;text-align:left" data-o="${esc(o)}">${isMobile() ? '' : `<kbd>${i + 1}</kbd>`}${esc(o)}</button>`).join('')}</div>
+      <div id="t-why" style="margin-top:10px;font-size:.82rem;font-family:var(--font-body)"></div>`;
     panel.querySelectorAll('.hop-btn').forEach((b) => (b.onclick = () => pickOpt(b)));
     current = { question, onRight };
   }
@@ -186,11 +196,16 @@ export function mountTower(shell) {
       score += pts;
       if (wrongThis === 0) combo = Math.min(5, combo + 1); else combo = 1;
       b.style.borderColor = 'var(--mint)'; b.style.color = 'var(--mint)';
+      sfx.play('ok');
+      burst(scene, pkt.position.clone(), 0x5cf2c2, 10);
       const cb = current.onRight; current = null;
       setTimeout(() => { $('#t-q', qpanel).style.display = 'none'; cb(); }, 350);
     } else {
       wrongThis++; totalWrong++; combo = 1;
       b.style.borderColor = 'var(--danger)'; b.style.color = 'var(--danger)'; b.disabled = true;
+      sfx.play('bad');
+      flag(current.question.card || 'q:layers:1'); flag('g:Encapsulation');
+      $('#t-why', qpanel).innerHTML = `<span style="color:var(--yellow)">💡 ${esc(current.question.hint)}</span> <a href="#/learn/layers" style="font-size:.78rem">${tr('Lesson →', 'Lektion →')}</a>`;
       const p = $('#t-q', qpanel); p.classList.add('shake'); setTimeout(() => p.classList.remove('shake'), 400);
     }
     updHud();
@@ -208,7 +223,7 @@ export function mountTower(shell) {
     pkt.position.set(towerX[0], floorY(0) + FLOOR_H / 2 + 2, 0);
     phase = 'encap'; step = 0;
     updHud();
-    renderStack(`Payload: <b style="color:var(--text)">${esc(sc.payload)}</b>`);
+    renderStack(`${tr('Payload', 'Nutzlast')}: <b style="color:var(--text)">${esc(sc.payload)}</b>`);
     overlay.style.display = 'none';
     await goTo(new THREE.Vector3(towerX[0], floorY(0), 0), 0.8);
     encapStep();
@@ -216,9 +231,9 @@ export function mountTower(shell) {
   function encapStep() {
     const layer = LAYERS[step];
     ask(encapQuestion(sc, layer), async () => {
-      const isNone = sc[layer.key].startsWith('None') || sc[layer.key].startsWith('No app');
-      if (!isNone) addShell(layer);
-      renderStack(isNone ? `<span style="color:var(--yellow)">${layer.name}: no header added here — that's the trick!</span>` : `<span style="color:${layer.color}">+ ${esc(sc[layer.key])}</span>`);
+      const none = isNone(sc, layer.key);
+      if (!none) addShell(layer);
+      renderStack(none ? `<span style="color:var(--yellow)">${layer.full}: ${tr('no header added here — that’s the trick!', 'hier kommt kein Header dazu – das ist der Trick!')}</span>` : `<span style="color:${layer.color}">+ ${esc(sc[layer.key])}</span>`);
       flashFloor(0, step);
       step++;
       if (step < LAYERS.length) { await goTo(new THREE.Vector3(towerX[0], floorY(step), 0)); encapStep(); }
@@ -228,7 +243,8 @@ export function mountTower(shell) {
   function flashFloor(ti, i) { const f = floorMeshes[ti][i]; f.flash = 1; }
   function wire() {
     phase = 'wire';
-    renderStack('<span style="color:var(--yellow)">Physical layer: the frame becomes a stream of bits on the cable…</span>');
+    sfx.play('whoosh');
+    renderStack(`<span style="color:var(--yellow)">${tr('Physical layer: the frame becomes a stream of bits on the cable…', 'Bitübertragungsschicht: Der Rahmen wird zu einem Bitstrom auf dem Kabel …')}</span>`);
     pkt.visible = false;
     bitRun = { t: 0 };
   }
@@ -237,7 +253,7 @@ export function mountTower(shell) {
     pkt.position.set(towerX[1], 1.2, 0);
     phase = 'decap';
     step = LAYERS.length - 1;
-    renderStack('<span style="color:var(--mint)">Bits re‑assembled into a frame. FCS checks out ✓</span>');
+    renderStack(`<span style="color:var(--mint)">${tr('Bits re‑assembled into a frame. FCS checks out ✓', 'Bits wieder zu einem Rahmen zusammengesetzt. Prüfsumme (FCS) stimmt ✓')}</span>`);
     await goTo(new THREE.Vector3(towerX[1], floorY(step), 0));
     decapStep();
   }
@@ -247,7 +263,7 @@ export function mountTower(shell) {
       const hasShell = shells.length && shells[shells.length - 1].userData.layer.key === layer.key;
       if (hasShell) peelShell();
       flashFloor(1, step);
-      renderStack(hasShell ? `<span style="color:${layer.color}">− ${layer.name} header read & stripped</span>` : `<span style="color:var(--yellow)">nothing to strip at ${layer.name}</span>`);
+      renderStack(hasShell ? `<span style="color:${layer.color}">− ${layer.full}: ${tr('header read & stripped', 'Header gelesen & entfernt')}</span>` : `<span style="color:var(--yellow)">${layer.full}: ${tr('nothing to strip', 'nichts zu entfernen')}</span>`);
       step--;
       if (step >= 0) { await goTo(new THREE.Vector3(towerX[1], floorY(step), 0)); decapStep(); }
       else { await goTo(new THREE.Vector3(towerX[1], floorY(0) + FLOOR_H / 2 + 1.5, 0)); roundDone(); }
@@ -255,35 +271,32 @@ export function mountTower(shell) {
   }
   function roundDone() {
     round++;
-    store.award(`tower-${sc.id}`, 10, `${sc.title}: delivered`);
+    sfx.play('win');
+    store.award(`tower-${sc.id}`, 10, `${sc.title}: ${tr('delivered', 'zugestellt')}`);
     if (round >= 3) return finish();
-    overlay.innerHTML = `<div class="panel"><span class="tag mint">delivered</span><h2 style="margin-top:14px">${sc.icon} ${esc(sc.title)} ✓</h2><p>Score so far: <b style="color:var(--mint)">${score}</b>. Next mission: <b>${rounds[round].icon} ${esc(rounds[round].title)}</b></p><div class="btn-row"><button class="btn" id="t-next">Continue →</button></div></div>`;
+    overlay.innerHTML = `<div class="panel"><span class="tag mint">${tr('delivered', 'zugestellt')}</span><h2 style="margin-top:14px">${sc.icon} ${esc(sc.title)} ✓</h2><p>${tr('Score so far', 'Bisherige Punkte')}: <b style="color:var(--mint)">${score}</b>. ${tr('Next mission', 'Nächster Auftrag')}: <b>${rounds[round].icon} ${esc(rounds[round].title)}</b></p><div class="btn-row"><button class="btn" id="t-next">${tr('Continue →', 'Weiter →')}</button></div></div>`;
     overlay.style.display = 'grid';
     $('#t-next', overlay).onclick = startRound;
   }
   function finish() {
     phase = 'done';
     const best = store.setBest('tower', score);
-    if (totalWrong === 0) store.award('tower-perfect', 40, 'Flawless encapsulation');
-    store.award('tower-win', 30, 'Encapsulation Elevator complete');
-    overlay.innerHTML = `<div class="panel"><span class="tag mint">all missions complete</span><h2 style="margin-top:14px">Stack master</h2><div class="big-score">${score}</div><p>${best ? '🏆 New personal best! ' : `Best: ${store.best('tower')}. `}${totalWrong ? `${totalWrong} wrong pick${totalWrong === 1 ? '' : 's'}.` : 'Not a single mistake!'}</p><div class="btn-row"><button class="btn" id="t-again">Play again</button><a class="btn ghost" href="#/learn/layers">Review layers</a></div></div>`;
+    if (totalWrong === 0) store.award('tower-perfect', 40, tr('Flawless encapsulation', 'Fehlerfrei gekapselt'));
+    store.award('tower-win', 30, tr('Encapsulation Elevator complete', 'Encapsulation Elevator geschafft'));
+    overlay.innerHTML = `<div class="panel"><span class="tag mint">${tr('all missions complete', 'alle Aufträge erledigt')}</span><h2 style="margin-top:14px">${tr('Stack master', 'Stack-Meister')}</h2><div class="big-score">${score}</div><p>${best ? tr('🏆 New personal best! ', '🏆 Neuer Rekord! ') : `${tr('Best', 'Rekord')}: ${store.best('tower')}. `}${totalWrong ? tr(`${totalWrong} wrong pick(s) — they are now in your flashcards.`, `${totalWrong} Fehlgriff(e) – sie sind jetzt in deinen Karteikarten.`) : tr('Not a single mistake!', 'Kein einziger Fehler!')}</p><div class="btn-row"><button class="btn" id="t-again">${tr('Play again', 'Noch mal')}</button><a class="btn ghost" href="#/learn/layers">${tr('Review layers', 'Schichten wiederholen')}</a></div></div>`;
     overlay.style.display = 'grid';
     $('#t-again', overlay).onclick = () => window.dispatchEvent(new HashChangeEvent('hashchange'));
   }
 
-  overlay.innerHTML = `<div class="panel"><span class="tag violet">3D · layers game</span><h2 style="margin-top:14px">Encapsulation Elevator</h2>
-    <p>Ride a message down the sender's network stack, across the wire, and up the receiver's stack.</p>
-    <div class="how"><div>⬇ <b>Sender:</b> at each layer pick the header that gets added. Watch the packet grow shells.</div><div>〰 <b>Physical:</b> your frame turns into bits on the cable.</div><div>⬆ <b>Receiver:</b> each layer reads a field to decide who gets the payload next — then strips its header.</div><div>🔥 Answer without mistakes to build a combo (up to ×5). Keys <kbd>1</kbd>–<kbd>4</kbd> work.</div></div>
-    <div class="btn-row"><button class="btn" id="t-start">Start ▶</button><a class="btn ghost" href="#/learn/layers">Learn first</a></div>
-    ${store.best('tower') ? `<p style="margin:16px 0 0;font-size:.85rem">Your best: <b style="color:var(--mint)">${store.best('tower')}</b></p>` : ''}</div>`;
-  $('#t-start', overlay).onclick = startRound;
+  overlay.innerHTML = `<div class="panel"><span class="tag violet">${tr('3D · layers game', '3D · Schichten-Spiel')}</span><h2 style="margin-top:14px">Encapsulation Elevator</h2>
+    <p>${tr('Ride a message down the sender’s network stack, across the wire, and up the receiver’s stack.', 'Fahre eine Nachricht durch den Netzwerk-Stack des Senders nach unten, über die Leitung und beim Empfänger wieder hoch.')}</p>
+    <div class="how"><div>⬇ ${tr('<b>Sender:</b> at each layer pick the header that gets added. Watch the packet grow shells.', '<b>Sender:</b> Wähle auf jeder Schicht den Header, der dazukommt. Das Paket bekommt Hüllen.')}</div><div>〰 ${tr('<b>Physical:</b> your frame turns into bits on the cable.', '<b>Bitübertragung:</b> Dein Rahmen wird zu Bits auf dem Kabel.')}</div><div>⬆ ${tr('<b>Receiver:</b> each layer reads a field to decide who gets the payload next — then strips its header.', '<b>Empfänger:</b> Jede Schicht liest ein Feld, um zu entscheiden, wer die Nutzlast bekommt – und entfernt dann ihren Header.')}</div><div>🔥 ${tr('Answer without mistakes to build a combo (up to ×5).', 'Antworte fehlerfrei für eine Combo (bis ×5).')} ${isMobile() ? '' : tr('Keys <kbd>1</kbd>–<kbd>4</kbd> work.', 'Tasten <kbd>1</kbd>–<kbd>4</kbd> gehen auch.')}</div><div>🎲 ${tr(`3 random missions out of ${SCENARIOS.length} — including VPN tunnels, SSH and HTTP/3 over IPv6.`, `3 zufällige aus ${SCENARIOS.length} Aufträgen – darunter VPN-Tunnel, SSH und HTTP/3 über IPv6.`)}</div></div>
+    <div class="btn-row"><button class="btn" id="t-start">Start ▶</button><a class="btn ghost" href="#/learn/layers">${tr('Learn first', 'Erst lernen')}</a></div>
+    ${store.best('tower') ? `<p style="margin:16px 0 0;font-size:.85rem">${tr('Your best', 'Dein Rekord')}: <b style="color:var(--mint)">${store.best('tower')}</b></p>` : ''}</div>`;
+  $('#t-start', overlay).onclick = () => { sfx.play('click'); startRound(); };
 
   // orbit camera
-  let theta = 0.35, phi = 1.2, dist = window.innerWidth < 760 ? 72 : 50, dragging = false, lx = 0, ly = 0;
-  canvas.addEventListener('pointerdown', (e) => { dragging = true; lx = e.clientX; ly = e.clientY; canvas.setPointerCapture(e.pointerId); });
-  canvas.addEventListener('pointermove', (e) => { if (!dragging) return; theta -= (e.clientX - lx) * 0.006; phi = Math.max(0.3, Math.min(1.5, phi - (e.clientY - ly) * 0.005)); lx = e.clientX; ly = e.clientY; });
-  canvas.addEventListener('pointerup', () => (dragging = false));
-  canvas.addEventListener('wheel', (e) => { e.preventDefault(); dist = Math.max(18, Math.min(80, dist + e.deltaY * 0.03)); }, { passive: false });
+  const cam = orbit(canvas, { theta: 0.35, phi: 1.2, dist: isMobile() ? 72 : 50, phiMin: 0.3, phiMax: 1.5, distMin: 18, distMax: 90 });
   const look = new THREE.Vector3(0, 8, 0);
 
   loop((dt, t) => {
@@ -318,8 +331,8 @@ export function mountTower(shell) {
     // camera follows packet softly
     const focus = phase === 'wire' && bitRun ? cableCurve.getPoint(Math.min(1, bitRun.t)) : pkt.position;
     look.lerp(new THREE.Vector3(focus.x * 0.3, Math.max(4, focus.y * 0.8), 0), 0.04);
-    if (phase === 'intro' || phase === 'done') theta += dt * 0.1;
-    const off = new THREE.Vector3(Math.sin(phi) * Math.sin(theta), Math.cos(phi), Math.sin(phi) * Math.cos(theta)).multiplyScalar(dist);
+    if (phase === 'intro' || phase === 'done') cam.theta += dt * 0.1;
+    const off = new THREE.Vector3(Math.sin(cam.phi) * Math.sin(cam.theta), Math.cos(cam.phi), Math.sin(cam.phi) * Math.cos(cam.theta)).multiplyScalar(cam.dist);
     camera.position.lerp(look.clone().add(off), 0.07);
     camera.lookAt(look);
     render();
