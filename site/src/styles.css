@@ -541,3 +541,29 @@ a.xp-chip:hover { border-color: var(--mint); }
 @media (max-width: 760px) { .game-mute { top: 50px; right: 10px; left: auto; bottom: auto; padding: 6px 10px; font-size: .78rem; } }
 /* inside games the bottom edge holds the answer buttons, so toasts drop in from the top */
 body:has(.game-shell) #toast-root { top: calc(var(--topbar-h) + 84px); bottom: auto; }
+
+/* ---------- IPv6 ---------- */
+.v6-groups { display: flex; flex-wrap: wrap; gap: 6px; font: 600 1rem var(--font-mono); }
+.v6-groups span { padding: 6px 8px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); color: var(--text); }
+.v6-groups span.zero { color: var(--muted); border-style: dashed; }
+.v6-steps { display: grid; gap: 10px; padding-left: 1.3em; color: var(--text-dim); }
+.v6-steps code .ins, .v6-steps code.ins, .v6-steps .ins { color: var(--orange); }
+
+/* ---------- VPN ---------- */
+.vpn-path { display: flex; align-items: center; gap: 0; overflow-x: auto; padding: 6px 0 4px; }
+.vpn-hop { flex: none; text-align: center; padding: 10px 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); min-width: 96px; display: flex; flex-direction: column; gap: 2px; font-size: .82rem; }
+.vpn-hop.spy { border-color: rgba(255,209,102,.35); }
+.vpn-hop small { font: .68rem var(--font-mono); color: var(--muted); }
+.vpn-ico { font-size: 1.5rem; }
+.vpn-wire { flex: 1; min-width: 24px; height: 4px; background: var(--line-strong); position: relative; border-radius: 4px; }
+.vpn-wire.tunnel { background: linear-gradient(90deg, var(--violet), var(--mint)); box-shadow: 0 0 12px rgba(139,123,255,.6); height: 8px; }
+.vpn-wire span { position: absolute; top: 50%; left: 0; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: var(--yellow); animation: vpnDot 1.6s linear infinite; }
+@keyframes vpnDot { to { left: calc(100% - 8px); } }
+
+/* ---------- e-mail ---------- */
+.em-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(220px, 1fr); gap: 16px; }
+@media (max-width: 760px) { .em-grid { grid-template-columns: 1fr; } }
+.em-check { display: grid; grid-template-columns: 70px 1fr; gap: 2px 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); margin-bottom: 8px; font-size: .85rem; }
+.em-check small { grid-column: 1 / -1; color: var(--text-dim); }
+.em-check.ok { border-color: rgba(92,242,194,.45); } .em-check.ok span { color: var(--mint); }
+.em-check.bad { border-color: rgba(255,84,112,.45); } .em-check.bad span { color: var(--danger); }

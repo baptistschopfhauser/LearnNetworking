@@ -1,3 +1,20 @@
 // Deutsche Glossar-Einträge, Schlüssel = englischer Begriff, Wert = [Begriff, Erklärung].
 export const GLOSSARY_DE = {
+  'SLAAC': ['SLAAC', 'Zustandslose Adress-Autokonfiguration: IPv6-Hosts bauen ihre Adresse selbst aus dem /64-Präfix des Routers.'],
+  'Neighbor Discovery': ['Neighbor Discovery', 'ICMPv6-Mechanismus, der Link-Layer-Adressen von Nachbarn und Router findet; ersetzt ARP.'],
+  'Link-local address': ['Link-Local-Adresse', 'Eine fe80::-Adresse, die jedes IPv6-Interface hat; nur im lokalen Netzsegment gültig.'],
+  'Dual stack': ['Dual Stack', 'IPv4 und IPv6 laufen parallel auf denselben Netzen und Hosts.'],
+  '802.1Q': ['802.1Q', 'Der VLAN-Tagging-Standard: ein 4-Byte-Tag mit 12-Bit-VLAN-ID in Ethernet-Rahmen auf Trunks.'],
+  'Trunk port': ['Trunk-Port', 'Ein Switch-Port, der mehrere VLANs mit 802.1Q-Tags überträgt.'],
+  'Broadcast storm': ['Broadcast-Sturm', 'Broadcasts kreisen endlos durch eine Switch-Schleife und vervielfachen sich, bis das Netz zusammenbricht.'],
+  'Root bridge': ['Root-Bridge', 'Der Switch, der zum Mittelpunkt des Spanning Tree gewählt wurde.'],
+  'SMTP': ['SMTP', 'Simple Mail Transfer Protocol: wie Mail eingeliefert (Port 587) und zwischen Servern weitergegeben wird (Port 25).'],
+  'IMAP': ['IMAP', 'Protokoll zum Lesen von Mail, die auf dem Server bleibt (Port 993 mit TLS).'],
+  'SPF': ['SPF', 'Sender Policy Framework: ein DNS-TXT-Eintrag, der auflistet, welche IPs Mail für eine Domain senden dürfen.'],
+  'DKIM': ['DKIM', 'DomainKeys Identified Mail: eine kryptografische Signatur an Mails, geprüft mit einem öffentlichen Schlüssel im DNS.'],
+  'DMARC': ['DMARC', 'Richtlinie einer Domain (none/quarantine/reject) für Mails, die passende SPF- und DKIM-Prüfungen nicht bestehen.'],
+  'Tunnel': ['Tunnel', 'Ein Paket wird als Nutzlast eines anderen transportiert, oft verschlüsselt – so arbeiten VPNs.'],
+  'WireGuard': ['WireGuard', 'Ein modernes, schlankes VPN-Protokoll über UDP (Standard-Port 51820) mit fester moderner Kryptografie.'],
+  'IPsec': ['IPsec', 'Protokollfamilie, die IP-Pakete verschlüsselt und authentifiziert; üblich für Site-to-Site-VPNs.'],
+  'Split tunnel': ['Split Tunnel', 'VPN-Aufbau, bei dem nur manche Ziele durch den Tunnel gehen und der Rest direkt.'],
 };

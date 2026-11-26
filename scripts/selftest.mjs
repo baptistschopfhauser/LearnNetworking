@@ -11,3 +11,39 @@ c = grade(grade(grade(grade(c, true, t), true, t), true, t), true, t); assert.eq
 assert.ok(!isDue(c, t + 15 * DAY)); assert.ok(isDue(c, t + 16 * DAY));
 c = grade(c, false, t); assert.equal(c.box, 1); assert.ok(isDue(c, t));
 console.log('selftest: srs ok');
+
+import { expand6, compress6, eui64 } from '../site/src/net6.js';
+assert.deepEqual(expand6('2001:db8::1'), ['2001', '0db8', '0000', '0000', '0000', '0000', '0000', '0001']);
+assert.deepEqual(expand6('::'), Array(8).fill('0000'));
+assert.equal(expand6('2001:db8::1::2'), null);           // two ::
+assert.equal(expand6('2001:db8:0:0:0:0:0:0:1'), null);   // 9 groups
+assert.equal(expand6('12345::1'), null);                 // 5 hex digits
+assert.equal(expand6('1:2:3:4:5:6:7::8'), null);         // :: must replace at least one group
+assert.equal(compress6(expand6('2001:0db8:0000:0000:0000:ff00:0042:8329')), '2001:db8::ff00:42:8329');
+assert.equal(compress6(expand6('2001:db8:0:1:0:0:0:1')), '2001:db8:0:1::1');   // longest run wins
+assert.equal(compress6(expand6('2001:0:0:1:0:0:1:1')), '2001::1:0:0:1:1');      // tie → first run
+assert.equal(compress6(expand6('2001:db8:1:1:1:1:0:1')), '2001:db8:1:1:1:1:0:1'); // single 0 stays
+assert.equal(compress6(expand6('::1')), '::1');
+assert.equal(compress6(expand6('fe80::')), 'fe80::');
+assert.deepEqual(eui64('00:1a:2b:3c:4d:5e'), ['021a', '2bff', 'fe3c', '4d5e']);
+assert.equal(eui64('00:1a:2b'), null);
+console.log('selftest: ipv6 ok');
+
+// course data: German lessons mirror English ones; every embedded widget exists
+import { MODULES_EN } from '../site/src/data/modules.en.js';
+import { MODULES_DE } from '../site/src/data/modules.de.js';
+import { WIDGETS } from '../site/src/widgets/index.js';
+const enById = Object.fromEntries(MODULES_EN.map((m) => [m.id, m]));
+for (const m of [...MODULES_EN, ...MODULES_DE]) {
+  for (const [, w] of m.body.matchAll(/data-widget="([\w-]+)"/g)) assert.ok(WIDGETS[w], `${m.id}: unknown widget ${w}`);
+  m.quiz.forEach((q) => assert.ok(q.c >= 0 && q.c < q.a.length, `${m.id}: bad answer index`));
+}
+for (const de of MODULES_DE) {
+  const en = enById[de.id];
+  assert.ok(en, `German lesson ${de.id} has no English twin`);
+  assert.equal(de.level, en.level, `${de.id}: level differs`);
+  assert.equal(de.quiz.length, en.quiz.length, `${de.id}: quiz length differs`);
+  de.quiz.forEach((q, i) => assert.equal(q.c, en.quiz[i].c, `${de.id}: answer ${i} differs`));
+  assert.equal((de.body.match(/data-widget/g) || []).length, (en.body.match(/data-widget/g) || []).length, `${de.id}: widget count differs`);
+}
+console.log(`selftest: course ok (${MODULES_EN.length} lessons, ${MODULES_DE.length} in German)`);

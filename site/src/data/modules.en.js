@@ -340,6 +340,57 @@ ${deep('Route summarisation (supernetting)', `
 
   /* ============================================================ */
   {
+    id: 'ipv6', level: 'core', icon: '6️⃣', color: '#4cc9ff', minutes: 12,
+    title: 'IPv6 in depth',
+    summary: '128-bit addresses, how to shorten them, SLAAC and living in a dual-stack world.',
+    body: `
+<h2 id="why6">Why IPv6?</h2>
+<p>IPv4 has about 4.3 billion addresses, and they ran out years ago. NAT stretched them, but at a cost: devices can’t reach each other directly, and ISPs need giant carrier-grade NAT boxes. <strong>IPv6</strong> uses <strong>128-bit</strong> addresses, which is 340 undecillion (3.4×10<sup>38</sup>), enough to give every device a globally unique address again.</p>
+${analogy('IPv4 is a city that ran out of house numbers, so whole apartment blocks share one number and a doorman (NAT) sorts the mail. IPv6 gives every apartment its own number again, with plenty left over for every grain of sand.')}
+
+<h2 id="notation">Writing addresses</h2>
+<p>An IPv6 address is 8 groups of 4 hex digits: <code>2001:0db8:0000:0000:0000:ff00:0042:8329</code>. Two rules make it shorter:</p>
+<ol>
+<li>Drop <strong>leading zeros</strong> in each group: <code>0db8</code> → <code>db8</code>, <code>0000</code> → <code>0</code>.</li>
+<li>Replace <strong>one</strong> run of all-zero groups with <code>::</code>, the longest run (or the first if tied).</li>
+</ol>
+<p>Result: <code>2001:db8::ff00:42:8329</code>. Try the converter, then the drill:</p>
+<div data-widget="ipv6"></div>
+${warn('<code>::</code> may appear only once, otherwise nobody could tell how many zeros each one hides. <code>2001::1::2</code> is invalid.')}
+
+<h2 id="types">Address types</h2>
+<div class="tbl-wrap"><table class="tbl">
+<tr><th>Prefix</th><th>Type</th><th>IPv4 cousin</th></tr>
+<tr><td><code>2000::/3</code></td><td>Global unicast (public)</td><td>public addresses</td></tr>
+<tr><td><code>fe80::/10</code></td><td>Link-local, on every interface, never routed</td><td>169.254.0.0/16</td></tr>
+<tr><td><code>fc00::/7</code></td><td>Unique local (private)</td><td>10/8, 192.168/16</td></tr>
+<tr><td><code>ff00::/8</code></td><td>Multicast (there is no broadcast in IPv6)</td><td>224.0.0.0/4</td></tr>
+<tr><td><code>::1</code></td><td>Loopback</td><td>127.0.0.1</td></tr>
+</table></div>
+<p>A LAN almost always gets a <strong>/64</strong>: the first 64 bits are the network, the last 64 the <strong>interface ID</strong>. ISPs typically hand a home a /56 or /48, which is 256 or 65 536 LANs.</p>
+
+<h2 id="slaac">Getting an address: SLAAC</h2>
+<p>IPv6 hosts can configure themselves with no DHCP server. The router sends <strong>Router Advertisements</strong> (“this LAN is 2001:db8:ab:1::/64, I’m your gateway”), and the host builds its own interface ID. That ID can come from the MAC (EUI-64, see the widget tab) or, today usually, from random <em>privacy addresses</em> that change regularly. <strong>Neighbor Discovery</strong> (ICMPv6) replaces ARP, and <strong>DAD</strong> (duplicate address detection) makes sure nobody else uses the same address.</p>
+
+${deep('Dual stack and Happy Eyeballs', `
+<p>Most networks run IPv4 and IPv6 side by side (<strong>dual stack</strong>). When a name has both A and AAAA records, the browser races them: it starts IPv6 first and, if that hasn’t connected after ~250 ms, also tries IPv4, then keeps the winner. That’s <strong>Happy Eyeballs</strong> (RFC 8305). It’s why a half-broken IPv6 setup doesn’t make the web feel slow.</p>
+<p>Mobile carriers often run <strong>IPv6-only</strong> with <strong>NAT64/DNS64</strong>: when an app asks for a site with only an IPv4 address, DNS64 makes up an IPv6 address inside <code>64:ff9b::/96</code> and a NAT64 gateway translates.</p>`)}
+${deep('The IPv6 header: simpler and faster', `
+<p>The IPv6 header has a fixed 40 bytes and fewer fields than IPv4: no header checksum (layer 2 and 4 already check), and no fragmentation by routers (only the sender fragments, using Path MTU Discovery). Options move into <strong>extension headers</strong> chained by the <em>Next Header</em> field. <em>Hop Limit</em> replaces TTL. The minimum MTU is 1280 bytes.</p>
+<pre class="code">| Version | Traffic Class | Flow Label            |
+| Payload Length   | <span class="k">Next Header</span> | <span class="n">Hop Limit</span> |
+| <span class="s">Source Address (128 bits)</span>                   |
+| <span class="s">Destination Address (128 bits)</span>              |</pre>`)}
+`,
+    quiz: [
+      { q: 'What is the correct short form of 2001:0db8:0000:0000:0001:0000:0000:0001?', a: ['2001:db8::1::1', '2001:db8::1:0:0:1', '2001:db8:0:0:1::1', '2001:db8::10:0:1'], c: 1, why: 'Both zero runs are 2 groups long; the first one gets the :: and the second stays as 0:0.' },
+      { q: 'Which IPv6 feature replaces ARP?', a: ['DHCPv6', 'Neighbor Discovery (ICMPv6)', 'Happy Eyeballs', 'NAT64'], c: 1, why: 'Neighbor Discovery uses ICMPv6 multicast messages to find link-layer addresses.' },
+      { q: 'How big is a typical IPv6 LAN subnet?', a: ['/24', '/48', '/64', '/128'], c: 2, why: 'A /64 is standard: 64 bits of network and 64 bits of interface ID, which SLAAC needs.' },
+    ],
+  },
+
+  /* ============================================================ */
+  {
     id: 'switching', level: 'core', icon: '🔀', color: '#ff5c9a', minutes: 10,
     title: 'Ethernet, switches & ARP',
     summary: 'MAC addresses, how switches learn, and how IPs map to MACs.',
@@ -381,6 +432,50 @@ ${deep('ARP spoofing — why the LAN is not automatically trusted', `
       { q: 'What does a switch do with a frame for an unknown destination MAC?', a: ['Drops it', 'Floods it out all other ports', 'Sends it to the router', 'Asks DNS'], c: 1, why: 'Unknown unicast is flooded; the reply then teaches the switch where that MAC lives.' },
       { q: 'What does ARP map?', a: ['Hostnames to IPs', 'IPs to MAC addresses', 'Ports to processes', 'MACs to VLANs'], c: 1, why: 'ARP resolves a next-hop IPv4 address to the MAC address needed to build the Ethernet frame.' },
       { q: 'Your PC (192.168.1.10/24) sends to 8.8.8.8. Whose MAC goes in the frame?', a: ['8.8.8.8’s', 'The default gateway’s', 'The broadcast MAC', 'Your own'], c: 1, why: '8.8.8.8 is off-subnet, so the frame is addressed to the router (default gateway).' },
+    ],
+  },
+
+  /* ============================================================ */
+  {
+    id: 'vlans', level: 'core', icon: '🌳', color: '#ff5c9a', minutes: 11,
+    title: 'VLANs & Spanning Tree',
+    summary: 'Split one switch into many networks, and keep redundant links from melting the LAN.',
+    body: `
+<h2 id="vlan">VLANs: many LANs, one switch</h2>
+<p>A <strong>VLAN</strong> (virtual LAN) splits a switch into separate broadcast domains. Ports in VLAN 10 (staff) can’t see frames from VLAN 20 (guests) at layer 2, as if they were plugged into different switches. To talk across VLANs, traffic must go through a router or layer-3 switch, which is exactly where you put firewall rules.</p>
+${analogy('One office building, but floors with separate key cards: everyone shares the elevator (the switch hardware), yet guests can only get off on the guest floor.')}
+
+<h2 id="trunks">Access ports and trunks</h2>
+<ul>
+<li>An <strong>access port</strong> belongs to one VLAN. The PC on it doesn’t even know VLANs exist.</li>
+<li>A <strong>trunk</strong> links switches and carries many VLANs. Each frame gets a 4-byte <strong>802.1Q tag</strong> with a 12-bit VLAN ID (1–4094), so the next switch knows which VLAN it belongs to.</li>
+</ul>
+
+<h2 id="loops">Redundancy creates loops</h2>
+<p>For reliability you wire switches in a ring or mesh. But Ethernet frames have <strong>no TTL</strong>: a broadcast in a loop circles forever, and every switch floods a fresh copy out of all its ports. Within seconds the network is saturated. This is a <strong>broadcast storm</strong>. Try it: send a broadcast with Spanning Tree off, then turn it on.</p>
+<div data-widget="vlan"></div>
+
+<h2 id="stp">Spanning Tree Protocol</h2>
+<p><strong>STP</strong> (802.1D) makes a looped topology behave like a tree:</p>
+<ol>
+<li>Switches elect a <strong>root bridge</strong> (lowest bridge ID = priority + MAC).</li>
+<li>Every other switch picks its best path to the root (its <em>root port</em>).</li>
+<li>Each link segment gets one forwarding <em>designated port</em>. Every remaining port is <strong>blocked</strong>.</li>
+</ol>
+<p>The blocked links stay physically connected as spares. If an active link fails, STP recalculates and unblocks a backup.</p>
+${note('Turning on VLANs and STP together in the lab shows the two jobs side by side: VLANs decide <em>who</em> receives a broadcast, STP makes sure each one receives it <em>exactly once</em>.')}
+
+${deep('Rapid STP, PortFast and BPDU Guard', `
+<p>Classic STP takes 30–50 seconds to converge (listening → learning → forwarding). <strong>RSTP</strong> (802.1w) uses a handshake between neighbours and converges in about a second. <strong>PortFast</strong> lets access ports to PCs skip the waiting. <strong>BPDU Guard</strong> shuts a PortFast port down if a switch suddenly appears on it, so someone plugging a cheap switch into the wall can’t become root bridge.</p>`)}
+${deep('VLAN hopping and why native VLAN 1 is dangerous', `
+<p>On a trunk, one <em>native VLAN</em> is sent untagged. An attacker on that VLAN can craft a frame with <strong>two</strong> 802.1Q tags: the first switch strips the outer (native) tag and forwards the frame, still tagged with the victim VLAN, over the trunk. Defences: never use VLAN 1, set the native VLAN to an unused ID, and turn off automatic trunk negotiation (DTP) on access ports.</p>`)}
+${deep('Data centres: no STP at all', `
+<p>Modern data centres avoid blocking half their links. They use a <strong>leaf-spine</strong> design with routed layer-3 links everywhere and <strong>ECMP</strong> to use every path at once. Tenants get isolated networks through overlays like <strong>VXLAN</strong>, which carries layer-2 frames inside UDP with a 24-bit ID, so 16 million segments instead of 4094 VLANs.</p>`)}
+`,
+    quiz: [
+      { q: 'Why does a loop between switches cause a broadcast storm?', a: ['Switches have too little memory', 'Ethernet frames have no TTL, so copies circle and multiply forever', 'VLAN tags get corrupted', 'IP addresses collide'], c: 1, why: 'Without a hop limit, flooded broadcasts loop endlessly and every switch adds more copies.' },
+      { q: 'What does an 802.1Q tag carry?', a: ['The IP address', 'A 12-bit VLAN ID', 'The TTL', 'The MAC table'], c: 1, why: 'The 4-byte tag holds priority bits and a 12-bit VLAN ID (1–4094).' },
+      { q: 'What does STP do with redundant links?', a: ['Deletes them', 'Blocks some ports so the topology becomes a tree', 'Load-balances across all of them', 'Converts them to trunks'], c: 1, why: 'STP blocks just enough ports to remove loops, and keeps them as backups.' },
     ],
   },
 
@@ -605,6 +700,57 @@ ${deep('Forward secrecy: why recorded traffic stays safe', `
 
   /* ============================================================ */
   {
+    id: 'email', level: 'apps', icon: '✉️', color: '#ffd166', minutes: 11,
+    title: 'E-mail: SMTP, SPF, DKIM, DMARC',
+    summary: 'How a mail finds its way, and why spam protection lives in DNS.',
+    body: `
+<h2 id="flow">The journey of an e-mail</h2>
+<p>E-mail is one of the oldest Internet services, and it still works like the post:</p>
+<ol>
+<li>Your mail app (the <strong>MUA</strong>) submits the message to your provider’s server over <strong>SMTP</strong> on port <strong>587</strong>, after you log in.</li>
+<li>Your provider’s server looks up the recipient domain’s <strong>MX record</strong> in DNS, which says which server accepts mail for it.</li>
+<li>It connects to that server on port <strong>25</strong> and hands the message over with SMTP.</li>
+<li>The recipient reads it later with <strong>IMAP</strong> (port 993) or in a web app.</li>
+</ol>
+${analogy('SMTP is a courier who accepts any envelope and never checks the sender’s name on it. SPF, DKIM and DMARC are the security desk at the receiving building, checking whether the courier and the letter are really from who they claim.')}
+
+<h2 id="smtp">Talking SMTP</h2>
+<p>SMTP is a text protocol you could type by hand:</p>
+<pre class="code"><span class="s">S: 220 mx1.mail.example ESMTP</span>
+C: EHLO smtp.lovelace.org
+<span class="s">S: 250-STARTTLS</span>
+C: MAIL FROM:&lt;ada@lovelace.org&gt;
+C: RCPT TO:&lt;grace@mail.example&gt;
+C: DATA
+C: From: Ada &lt;ada@lovelace.org&gt;
+C: Subject: Engines
+C: .
+<span class="s">S: 250 OK queued</span></pre>
+${warn('Nothing in SMTP verifies <code>MAIL FROM</code> or the <code>From:</code> header. Anyone can claim to be <code>ceo@bank.example</code>. That gap is why phishing works, and why the following three checks exist.')}
+
+<h2 id="auth">SPF, DKIM, DMARC</h2>
+<ul>
+<li><strong>SPF</strong>: the domain publishes in DNS which IPs may send its mail: <code>v=spf1 ip4:198.51.100.0/24 -all</code>.</li>
+<li><strong>DKIM</strong>: the sending server <em>signs</em> headers and body; the public key sits in DNS under <code>selector._domainkey.domain</code>.</li>
+<li><strong>DMARC</strong>: the domain’s policy (<code>p=none / quarantine / reject</code>). It requires SPF or DKIM to pass <em>and</em> match the visible <code>From:</code> domain, and asks for reports.</li>
+</ul>
+<p>Send three mails and watch the checks:</p>
+<div data-widget="email"></div>
+
+${deep('Why forwarding breaks SPF but not DKIM', `
+<p>When a mailing list or forwarder re-sends your mail, it comes from <em>their</em> IP, which isn’t in your SPF record, so SPF fails. The DKIM signature, however, travels <em>with</em> the message and stays valid as long as the signed headers and body aren’t changed. Mailing lists that add a footer break DKIM too; <strong>ARC</strong> (Authenticated Received Chain) lets intermediaries vouch for the original results.</p>`)}
+${deep('Transport encryption: STARTTLS and MTA-STS', `
+<p>Server-to-server SMTP upgrades to TLS with <code>STARTTLS</code>, but that is <em>opportunistic</em>: an attacker in the middle can strip the STARTTLS offer and force plain text. <strong>MTA-STS</strong> lets a domain publish “always use TLS with a valid certificate for my MX”, and <strong>TLS-RPT</strong> reports failures. End-to-end encryption (S/MIME, PGP) is a separate layer that protects the content even from the mail servers.</p>`)}
+`,
+    quiz: [
+      { q: 'Which DNS record tells servers where to deliver mail for a domain?', a: ['A', 'MX', 'PTR', 'SOA'], c: 1, why: 'MX (Mail eXchanger) records list the servers that accept mail for the domain, with priorities.' },
+      { q: 'What does SPF check?', a: ['The message signature', 'Whether the sending IP is allowed to send for the domain', 'The spelling of the subject', 'If the mailbox exists'], c: 1, why: 'SPF compares the connecting IP with the list published in the domain’s TXT record.' },
+      { q: 'A forwarded mail fails SPF but passes DKIM (aligned). What does DMARC say?', a: ['Reject', 'Pass', 'Quarantine', 'Bounce to sender'], c: 1, why: 'DMARC passes if either SPF or DKIM passes and aligns with the From: domain.' },
+    ],
+  },
+
+  /* ============================================================ */
+  {
     id: 'nat-firewalls', level: 'apps', icon: '🛡️', color: '#ff5470',
     minutes: 11,
     title: 'NAT, firewalls & security',
@@ -642,6 +788,61 @@ ${deep('VPNs: tunnels with encryption', `
       { q: 'Which technique relays WebRTC media when hole punching fails?', a: ['STUN', 'TURN', 'DHCP', 'ARP'], c: 1, why: 'TURN servers relay the traffic when direct peer-to-peer paths can’t be established.' },
     ],
   },
+  /* ============================================================ */
+  {
+    id: 'vpn', level: 'apps', icon: '🔐', color: '#8b7bff', minutes: 10,
+    title: 'VPNs & WireGuard',
+    summary: 'Tunnels, what a VPN really hides, and how modern VPNs like WireGuard work.',
+    body: `
+<h2 id="tunnel">A tunnel is a packet inside a packet</h2>
+<p>A <strong>VPN</strong> (virtual private network) takes your whole IP packet, encrypts it, and puts it as the <em>payload</em> of a new packet addressed to a VPN server. Networks in between only see the outer packet: encrypted UDP to one server. The server unwraps it and forwards the inner packet as if you were sitting there.</p>
+${analogy('Instead of posting a postcard, you put it in a locked box and mail the box to a friend abroad, who opens it and posts the postcard from there. The local post office only knows you sent a box to your friend.')}
+
+<h2 id="sees">Who can see what?</h2>
+<p>Toggle the VPN and HTTPS and look at what each observer learns:</p>
+<div data-widget="vpn"></div>
+${note('A VPN moves trust; it doesn’t remove it. Your café and ISP learn less, but the VPN provider now sees everything they used to see. HTTPS still matters inside the tunnel.')}
+
+<h2 id="uses">Two kinds of VPN</h2>
+<ul>
+<li><strong>Remote access</strong>: your laptop or phone connects into the company network, or out through a privacy VPN provider.</li>
+<li><strong>Site-to-site</strong>: two office routers keep a permanent tunnel, so both LANs behave like one network across the Internet.</li>
+</ul>
+
+<h2 id="wireguard">WireGuard</h2>
+<p><strong>WireGuard</strong> is a modern VPN built into Linux, about 4 000 lines of code versus hundreds of thousands for older stacks. Each peer has a key pair; the config lists peers, their public keys and which IPs (<code>AllowedIPs</code>) live behind them. It uses one fixed set of modern crypto (Curve25519, ChaCha20-Poly1305, BLAKE2s) and runs over UDP, by default on port 51820.</p>
+<pre class="code"><span class="c"># /etc/wireguard/wg0.conf on a laptop</span>
+[Interface]
+PrivateKey = <span class="s">(laptop private key)</span>
+Address    = 10.8.0.2/32
+
+[Peer]
+PublicKey  = <span class="s">(server public key)</span>
+Endpoint   = vpn.example:51820
+AllowedIPs = <span class="n">0.0.0.0/0, ::/0</span>   <span class="c"># send everything through the tunnel</span></pre>
+
+${deep('IPsec vs OpenVPN vs WireGuard', `
+<div class="tbl-wrap"><table class="tbl">
+<tr><th></th><th>IPsec</th><th>OpenVPN</th><th>WireGuard</th></tr>
+<tr><td>Layer</td><td>3 (in the kernel)</td><td>user space over TLS</td><td>3 (in the kernel)</td></tr>
+<tr><td>Transport</td><td>ESP (IP proto 50), UDP 500/4500</td><td>UDP or TCP</td><td>UDP</td></tr>
+<tr><td>Config</td><td>complex, many cipher choices</td><td>certificates, many options</td><td>keys + AllowedIPs, no choices</td></tr>
+<tr><td>Typical use</td><td>site-to-site, enterprise</td><td>remote access, legacy</td><td>everything new</td></tr>
+</table></div>`)}
+${deep('Split tunnelling, MTU and DNS leaks', `
+<ul>
+<li><strong>Split tunnel</strong>: only company subnets go through the VPN (<code>AllowedIPs = 10.0.0.0/8</code>), the rest goes direct. <strong>Full tunnel</strong>: <code>0.0.0.0/0</code>.</li>
+<li><strong>MTU</strong>: the extra outer headers (WireGuard adds about 60–80 bytes) mean inner packets must be smaller. WireGuard defaults to MTU 1420. Get it wrong and big packets vanish.</li>
+<li><strong>DNS leak</strong>: if your device still asks the café’s DNS server, everyone sees which sites you look up even though traffic is tunnelled. A good VPN client also routes DNS through the tunnel.</li>
+</ul>`)}
+`,
+    quiz: [
+      { q: 'With a full-tunnel VPN on café Wi-Fi, what does the café network see?', a: ['Every site you visit', 'Encrypted traffic to the VPN server', 'Your passwords', 'Nothing at all, not even traffic'], c: 1, why: 'Everything is wrapped in encrypted packets to the VPN server; only that destination is visible.' },
+      { q: 'Which port and transport does WireGuard use by default?', a: ['TCP 443', 'UDP 51820', 'UDP 500', 'TCP 1194'], c: 1, why: 'WireGuard runs over UDP, conventionally port 51820.' },
+      { q: 'Why does a VPN tunnel reduce the usable MTU?', a: ['Encryption compresses data', 'The extra outer headers take space in each packet', 'VPNs only allow small files', 'TTL is decreased'], c: 1, why: 'Outer IP/UDP/WireGuard headers add bytes, so the inner packet must be smaller to fit the link MTU.' },
+    ],
+  },
+
   /* ============================================================ */
   {
     id: 'troubleshooting', level: 'pro', icon: '🩺', color: '#5cf2c2', minutes: 15,

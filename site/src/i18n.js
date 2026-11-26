@@ -11,4 +11,3 @@ export function setLang(l) {
   try { localStorage.setItem(KEY, l); } catch { /* storage blocked */ }
   location.reload();
 }
-document.documentElement.lang = lang;

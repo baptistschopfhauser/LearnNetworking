@@ -47,6 +47,7 @@ function route() {
 
 // static header text: swap to German where the markup provides it (keeps child elements like the badge)
 if (lang === 'de') $$('[data-de]').forEach((el) => { el.firstChild.textContent = el.dataset.de + (el.childElementCount ? ' ' : ''); });
+document.documentElement.lang = lang;
 $('#lang-btn').textContent = lang === 'de' ? 'EN' : 'DE';
 $('#lang-btn').title = tr('Auf Deutsch umschalten', 'Switch to English');
 $('#lang-btn').addEventListener('click', () => setLang(lang === 'de' ? 'en' : 'de'));

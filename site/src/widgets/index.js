@@ -4,12 +4,14 @@ import { tcp, cwnd } from './transport.js';
 import { dns, http, tls, nat, firewall } from './apps.js';
 import { terminal } from './terminal.js';
 import { wifi, loadbalancer } from './pro.js';
+import { ipv6, vlan, vpn, email } from './net2.js';
 
 export const WIDGETS = {
   topology, osi, signal, bits,
   subnet, 'subnet-practice': subnetPractice, switch: switchSim, lpm, dijkstra,
   tcp, cwnd, dns, http, tls, nat, firewall,
   terminal, wifi, loadbalancer,
+  ipv6, vlan, vpn, email,
 };
 
 /** Replace every [data-widget] placeholder inside root with its live widget. */
