@@ -123,3 +123,61 @@ export const C3 = {
 };
 
 export const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+/** Phone/tablet or narrow window: games use larger camera distance and compact HUD. */
+export const isMobile = () => matchMedia('(pointer: coarse)').matches || innerWidth < 760;
+
+/**
+ * Drag-to-orbit, pinch/wheel-to-zoom. Returns a live state the game reads every frame:
+ * { theta, phi, dist, moved } — `moved` (px) lets tap handlers ignore drags.
+ */
+export function orbit(canvas, { theta = 0, phi = 1, dist = 30, phiMin = 0.25, phiMax = 1.45, distMin = 10, distMax = 80, ySpeed = -0.005, xSpeed = -0.006 } = {}) {
+  const o = { theta, phi, dist, moved: 0 };
+  const pts = new Map();
+  let pinch0 = 0, dist0 = 0;
+  const clampDist = (d) => Math.max(distMin, Math.min(distMax, d));
+  const spread = () => { const [a, b] = [...pts.values()]; return Math.hypot(a.x - b.x, a.y - b.y) || 1; };
+  canvas.addEventListener('pointerdown', (e) => {
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 1) o.moved = 0;
+    if (pts.size === 2) { pinch0 = spread(); dist0 = o.dist; }
+    canvas.setPointerCapture?.(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    const p = pts.get(e.pointerId);
+    if (!p) return;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y;
+    p.x = e.clientX; p.y = e.clientY;
+    o.moved += Math.abs(dx) + Math.abs(dy);
+    if (pts.size >= 2) { o.dist = clampDist((dist0 * pinch0) / spread()); return; }
+    o.theta += dx * xSpeed;
+    o.phi = Math.max(phiMin, Math.min(phiMax, o.phi + dy * ySpeed));
+  });
+  const up = (e) => pts.delete(e.pointerId);
+  canvas.addEventListener('pointerup', up);
+  canvas.addEventListener('pointercancel', up);
+  canvas.addEventListener('wheel', (e) => { e.preventDefault(); o.dist = clampDist(o.dist * (1 + e.deltaY * 0.001)); }, { passive: false });
+  return o;
+}
+
+export { sfx } from '../sfx.js';
+
+/** Short-lived spark burst at a point (self-animating, removes itself). */
+export function burst(scene, pos, color = 0x5cf2c2, n = 14) {
+  const c = new THREE.Color(color);
+  const parts = Array.from({ length: n }, () => {
+    const s = glowSprite(c, 0.9);
+    s.position.copy(pos);
+    s.userData.v = new THREE.Vector3(Math.random() - 0.5, Math.random() * 0.8, Math.random() - 0.5).normalize().multiplyScalar(4 + Math.random() * 4);
+    scene.add(s);
+    return s;
+  });
+  let last = performance.now(), life = 0;
+  const step = (now) => {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now; life += dt;
+    for (const s of parts) { s.position.addScaledVector(s.userData.v, dt); s.userData.v.y -= 6 * dt; s.material.opacity = Math.max(0, 1 - life / 0.8); }
+    if (life < 0.8) requestAnimationFrame(step);
+    else parts.forEach((s) => { scene.remove(s); s.material.dispose(); });
+  };
+  requestAnimationFrame(step);
+}

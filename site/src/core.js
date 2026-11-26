@@ -26,13 +26,13 @@ export const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', 
 
 /* ---------------- progress store ---------------- */
 const KEY = 'packetcraft.v1';
-const defaultState = { xp: 0, done: {}, quiz: {}, games: {}, awarded: {} };
+const defaultState = { xp: 0, done: {}, quiz: {}, games: {}, awarded: {}, cards: {}, streak: { days: 0, last: '' }, daily: { date: '', count: 0 } };
 let state = load();
 
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? { ...defaultState, ...JSON.parse(raw) } : structuredClone(defaultState);
+    return raw ? { ...structuredClone(defaultState), ...JSON.parse(raw) } : structuredClone(defaultState);
   } catch {
     return structuredClone(defaultState);
   }
@@ -67,6 +67,8 @@ export const store = {
   },
   best: (game) => state.games[game] || 0,
   reset() { state = structuredClone(defaultState); save(); },
+  /** Persist after mutating state returned by get(). */
+  save() { save(); },
 };
 
 export const LEVEL_XP = 100;
