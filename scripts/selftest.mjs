@@ -74,3 +74,9 @@ assert.ok(!G.survivesAnyCableCut(dev, cab, [1, 2], 5));                    // si
 const dev2 = [...dev, { id: 7, type: 'router' }];
 assert.ok(G.survivesAnyCableCut(dev2, [...cab, [3, 7], [7, 5]], [1, 2], 5)); // second router + uplink
 console.log('selftest: game logic ok');
+
+import { GLOSSARY_EN } from '../site/src/data/glossary.en.js';
+import { GLOSSARY_DE } from '../site/src/data/glossary.de.js';
+for (const [t] of GLOSSARY_EN) assert.ok(GLOSSARY_DE[t], `glossary term without German: ${t}`);
+for (const k of Object.keys(GLOSSARY_DE)) assert.ok(GLOSSARY_EN.some(([t]) => t === k), `German glossary key without English term: ${k}`);
+console.log(`selftest: glossary ok (${GLOSSARY_EN.length} terms)`);

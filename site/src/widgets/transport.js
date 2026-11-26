@@ -1,4 +1,5 @@
 import { $, $$, loop, setupCanvas, widgetShell, COLORS, store, sleep, onCleanup } from '../core.js';
+import { tr } from '../i18n.js';
 
 /* =========================================================
    TCP sequence diagram simulator with loss & retransmission
@@ -29,7 +30,7 @@ function simulateTCP(nSeg, W, loss) {
     for (let i = base; i < next; i++) {
       if (time - sentAt[i] >= RTO) {
         const l = lost();
-        ev.push({ dir: 'cs', t0: time, t1: time + D, label: `DATA #${i} (retransmit)`, kind: 'retx', lost: l, timeout: true });
+        ev.push({ dir: 'cs', t0: time, t1: time + D, label: `DATA #${i} (${tr('retransmit', 'Neusendung')})`, kind: 'retx', lost: l, timeout: true });
         if (!l) arrivals.push({ time: time + D, type: 'data', n: i });
         sentAt[i] = time; retrans++; sends++; sent = true;
         break;
@@ -51,10 +52,10 @@ function simulateTCP(nSeg, W, loss) {
 
 export function tcp(mount) {
   const w = widgetShell('tcp.trace', {
-    controls: `<label class="mono" style="font-size:.75rem;color:var(--muted);display:flex;gap:8px;align-items:center">loss <input type="range" id="tcp-loss" min="0" max="40" value="15" style="width:90px"><b id="tcp-lossv" style="color:var(--orange)">15%</b></label>
-      <div class="seg" id="tcp-w"><button data-w="1">stop&wait</button><button data-w="3" class="on">window 3</button><button data-w="5">window 5</button></div>
-      <button class="btn small" id="tcp-run">▶ Run</button>`,
-    foot: '<span id="tcp-foot">Press Run to open a connection and send 6 segments.</span>',
+    controls: `<label class="mono" style="font-size:.75rem;color:var(--muted);display:flex;gap:8px;align-items:center">${tr('loss', 'Verlust')} <input type="range" id="tcp-loss" min="0" max="40" value="15" style="width:90px"><b id="tcp-lossv" style="color:var(--orange)">15%</b></label>
+      <div class="seg" id="tcp-w"><button data-w="1">Stop&amp;Wait</button><button data-w="3" class="on">${tr('window', 'Fenster')} 3</button><button data-w="5">${tr('window', 'Fenster')} 5</button></div>
+      <button class="btn small" id="tcp-run">▶ ${tr('Run', 'Start')}</button>`,
+    foot: `<span id="tcp-foot">${tr('Press Run to open a connection and send 6 segments.', 'Drück Start, um eine Verbindung zu öffnen und 6 Segmente zu senden.')}</span>`,
   });
   mount.appendChild(w);
   const body = $('.widget-body', w);
@@ -82,7 +83,7 @@ export function tcp(mount) {
       <g id="tcp-evs"></g>`;
     const g = $('#tcp-evs', svg);
     const evs = [...sim.ev].sort((a, b) => a.t0 - b.t0);
-    $('#tcp-foot', w).textContent = 'running…';
+    $('#tcp-foot', w).textContent = tr('running…', 'läuft …');
     for (const e of evs) {
       if (id !== running) return;
       const c = colorOf(e);
@@ -95,19 +96,19 @@ export function tcp(mount) {
       const ang = (Math.atan2(yb - ya, xb - xa) * 180) / Math.PI;
       const flip = e.dir === 'sc' ? ang + 180 : ang;
       g.insertAdjacentHTML('beforeend', `<g>
-        ${e.timeout ? `<text x="${X1 - 12}" y="${ya + 4}" text-anchor="end" fill="${COLORS.orange}" font-family="JetBrains Mono" font-size="10">⏱ timeout</text>` : ''}
+        ${e.timeout ? `<text x="${X1 - 12}" y="${ya + 4}" text-anchor="end" fill="${COLORS.orange}" font-family="JetBrains Mono" font-size="10">⏱ ${tr('timeout', 'Timeout')}</text>` : ''}
         <line x1="${xa}" y1="${ya}" x2="${xe}" y2="${ye}" stroke="${c}" stroke-width="2" ${e.lost ? '' : `marker-end="url(#ar-${cname})"`} stroke-dasharray="${len}" stroke-dashoffset="${len}">
           <animate attributeName="stroke-dashoffset" from="${len}" to="0" dur="0.45s" fill="freeze"/></line>
         ${e.lost ? `<text x="${xe}" y="${ye + 5}" text-anchor="middle" fill="${COLORS.danger}" font-size="16" font-weight="800">✕<animate attributeName="opacity" from="0" to="1" begin="0.4s" dur="0.2s" fill="freeze"/></text>` : ''}
-        <text transform="translate(${mid.x},${mid.y - 6}) rotate(${flip})" text-anchor="middle" fill="${e.lost ? COLORS.danger : c}" font-family="JetBrains Mono" font-size="11" font-weight="600">${e.label}${e.lost ? ' — lost' : ''}</text>
+        <text transform="translate(${mid.x},${mid.y - 6}) rotate(${flip})" text-anchor="middle" fill="${e.lost ? COLORS.danger : c}" font-family="JetBrains Mono" font-size="11" font-weight="600">${e.label}${e.lost ? tr(' — lost', ' — verloren') : ''}</text>
       </g>`);
       scroll.scrollTop = Math.max(0, ya - 200);
       await sleep(e.kind === 'ctl' ? 420 : 260);
     }
     const eff = Math.round((6 / sim.sends) * 100);
-    $('#tcp-foot', w).innerHTML = `done in <b style="color:${COLORS.text}">${sim.end}</b> ticks · ${sim.sends} data sends · <b style="color:${sim.retrans ? COLORS.orange : COLORS.mint}">${sim.retrans} retransmissions</b> · efficiency ${eff}% · <span style="color:var(--muted)">ACK n = "I have everything before #n"</span>`;
-    store.award('tcp-run', 10, 'Watched TCP deliver reliably');
-    if (sim.retrans >= 3) store.award('tcp-lossy', 10, 'TCP survived a lossy link');
+    $('#tcp-foot', w).innerHTML = `${tr('done in', 'fertig in')} <b style="color:${COLORS.text}">${sim.end}</b> Ticks · ${sim.sends} ${tr('data sends', 'Datensendungen')} · <b style="color:${sim.retrans ? COLORS.orange : COLORS.mint}">${sim.retrans} ${tr('retransmissions', 'Neusendungen')}</b> · ${tr('efficiency', 'Effizienz')} ${eff}% · <span style="color:var(--muted)">${tr('ACK n = "I have everything before #n"', 'ACK n = „ich habe alles vor #n“')}</span>`;
+    store.award('tcp-run', 10, tr('Watched TCP deliver reliably', 'TCP beim zuverlässigen Zustellen zugesehen'));
+    if (sim.retrans >= 3) store.award('tcp-lossy', 10, tr('TCP survived a lossy link', 'TCP hat eine verlustreiche Leitung überlebt'));
   }
   $('#tcp-run', w).onclick = run;
   onCleanup(() => { running++; });
@@ -118,7 +119,7 @@ export function tcp(mount) {
    ========================================================= */
 export function cwnd(mount) {
   const w = widgetShell('tcp.cwnd', {
-    controls: `<button class="btn small orange" id="cw-loss">💥 Packet loss</button><button class="btn small ghost" id="cw-to">⏱ Timeout</button><button class="btn small ghost" id="cw-reset">↺</button>`,
+    controls: `<button class="btn small orange" id="cw-loss">💥 ${tr('Packet loss', 'Paketverlust')}</button><button class="btn small ghost" id="cw-to">⏱ Timeout</button><button class="btn small ghost" id="cw-reset">↺</button>`,
     foot: '<span id="cw-foot"></span>',
   });
   mount.appendChild(w);
@@ -128,7 +129,7 @@ export function cwnd(mount) {
   body.appendChild(canvas);
   const { ctx, size } = setupCanvas(canvas, 0.38, 240);
   let hist, cw, ss, acc, pending, phase;
-  const reset = () => { hist = [{ cw: 1, ss: 32, ev: null }]; cw = 1; ss = 32; acc = 0; pending = null; phase = 'slow start'; };
+  const reset = () => { hist = [{ cw: 1, ss: 32, ev: null }]; cw = 1; ss = 32; acc = 0; pending = null; phase = 'Slow Start'; };
   reset();
   $('#cw-loss', w).onclick = () => (pending = 'loss');
   $('#cw-to', w).onclick = () => (pending = 'timeout');
@@ -141,14 +142,14 @@ export function cwnd(mount) {
       acc = 0;
       let ev = null;
       if (cw >= CAP) pending = pending || 'loss'; // the "network" drops when we exceed capacity
-      if (pending === 'loss') { ss = Math.max(2, Math.floor(cw / 2)); cw = ss; phase = 'fast recovery → congestion avoidance'; ev = 'loss'; store.award('cwnd-loss', 5, 'Multiplicative decrease!'); }
-      else if (pending === 'timeout') { ss = Math.max(2, Math.floor(cw / 2)); cw = 1; phase = 'timeout → slow start'; ev = 'timeout'; }
-      else if (cw < ss) { cw = Math.min(ss, cw * 2); phase = 'slow start (×2 per RTT)'; }
-      else { cw += 1; phase = 'congestion avoidance (+1 per RTT)'; }
+      if (pending === 'loss') { ss = Math.max(2, Math.floor(cw / 2)); cw = ss; phase = 'Fast Recovery → Congestion Avoidance'; ev = 'loss'; store.award('cwnd-loss', 5, tr('Multiplicative decrease!', 'Multiplikative Verringerung!')); }
+      else if (pending === 'timeout') { ss = Math.max(2, Math.floor(cw / 2)); cw = 1; phase = 'Timeout → Slow Start'; ev = 'timeout'; }
+      else if (cw < ss) { cw = Math.min(ss, cw * 2); phase = tr('Slow Start (×2 per RTT)', 'Slow Start (×2 pro RTT)'); }
+      else { cw += 1; phase = tr('Congestion Avoidance (+1 per RTT)', 'Congestion Avoidance (+1 pro RTT)'); }
       pending = null;
       hist.push({ cw, ss, ev });
       if (hist.length > MAXR) hist.shift();
-      $('#cw-foot', w).innerHTML = `cwnd <b style="color:${COLORS.mint}">${cw}</b> segments · ssthresh <b style="color:${COLORS.violet}">${ss}</b> · <span style="color:${COLORS.yellow}">${phase}</span> · link capacity ≈ ${CAP}`;
+      $('#cw-foot', w).innerHTML = `cwnd <b style="color:${COLORS.mint}">${cw}</b> ${tr('segments', 'Segmente')} · ssthresh <b style="color:${COLORS.violet}">${ss}</b> · <span style="color:${COLORS.yellow}">${phase}</span> · ${tr('link capacity', 'Leitungskapazität')} ≈ ${CAP}`;
     }
     const W = size.w, H = size.h, pl = 40, pr = 16, pt = 16, pb = 26;
     ctx.clearRect(0, 0, W, H);
@@ -156,7 +157,7 @@ export function cwnd(mount) {
     const ys = (v) => H - pb - (v / (CAP + 6)) * (H - pt - pb);
     ctx.strokeStyle = 'rgba(160,175,220,0.08)'; ctx.fillStyle = COLORS.muted; ctx.font = '10px JetBrains Mono'; ctx.textAlign = 'right';
     [0, 16, 32, 48, 64].forEach((v) => { ctx.beginPath(); ctx.moveTo(pl, ys(v)); ctx.lineTo(W - pr, ys(v)); ctx.stroke(); ctx.fillText(v, pl - 6, ys(v) + 3); });
-    ctx.textAlign = 'center'; ctx.fillText('time (RTTs) →', W / 2, H - 6);
+    ctx.textAlign = 'center'; ctx.fillText(tr('time (RTTs) →', 'Zeit (RTTs) →'), W / 2, H - 6);
     ctx.strokeStyle = 'rgba(255,84,112,0.5)'; ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.moveTo(pl, ys(CAP)); ctx.lineTo(W - pr, ys(CAP)); ctx.stroke();
     // ssthresh
     ctx.strokeStyle = COLORS.violet; ctx.beginPath(); hist.forEach((p, i) => (i ? ctx.lineTo(xs(i), ys(p.ss)) : ctx.moveTo(xs(i), ys(p.ss)))); ctx.stroke(); ctx.setLineDash([]);

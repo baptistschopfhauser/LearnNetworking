@@ -297,13 +297,17 @@ export const TOOLS = [
   { id: 'bits', name: tr('Binary ↔ IP', 'Binär ↔ IP'), icon: '🔢' },
   { id: 'lpm', name: tr('Route lookup', 'Routensuche'), icon: '🧭' },
   { id: 'dijkstra', name: tr('Shortest paths', 'Kürzeste Wege'), icon: '🗺️' },
-  { id: 'tcp', name: 'TCP tracer', icon: '🤝' },
-  { id: 'dns', name: 'DNS resolver', icon: '📇' },
-  { id: 'http', name: 'HTTP client', icon: '🌐' },
+  { id: 'tcp', name: tr('TCP tracer', 'TCP-Tracer'), icon: '🤝' },
+  { id: 'dns', name: tr('DNS resolver', 'DNS-Resolver'), icon: '📇' },
+  { id: 'http', name: tr('HTTP client', 'HTTP-Client'), icon: '🌐' },
   { id: 'firewall', name: tr('Firewall rules', 'Firewall-Regeln'), icon: '🛡️' },
   { id: 'signal', name: tr('Line codes', 'Leitungscodes'), icon: '〰️' },
   { id: 'wifi', name: tr('Wi‑Fi planner', 'WLAN-Planer'), icon: '📶' },
-  { id: 'loadbalancer', name: 'Load balancer', icon: '⚖️' },
+  { id: 'loadbalancer', name: tr('Load balancer', 'Loadbalancer'), icon: '⚖️' },
+  { id: 'ipv6', name: 'IPv6', icon: '6️⃣' },
+  { id: 'vlan', name: 'VLAN / STP', icon: '🌳' },
+  { id: 'vpn', name: 'VPN', icon: '🔐' },
+  { id: 'email', name: tr('E-mail trace', 'E-Mail-Weg'), icon: '✉️' },
 ];
 export function lab(app, tool) {
   const cur = TOOLS.find((t) => t.id === tool) || TOOLS[0];

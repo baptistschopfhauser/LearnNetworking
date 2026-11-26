@@ -1,4 +1,6 @@
 import { $, widgetShell, store, sleep, esc, rand, onCleanup } from '../core.js';
+import { tr } from '../i18n.js';
+// Command output stays English, like a real Linux terminal; missions, help and explanations are translated.
 
 /* ---------------------------------------------------------
    A simulated Linux laptop: 192.168.1.42/24 behind a home router.
@@ -22,16 +24,16 @@ const PATH = ['192.168.1.1  (router.home)', '100.64.0.1', 'bras1.par.isp.net (80
 const LISTEN = [['tcp', '127.0.0.1:631', 'cupsd'], ['tcp', '0.0.0.0:22', 'sshd'], ['tcp', '127.0.0.1:5432', 'postgres'], ['udp', '127.0.0.53:53', 'systemd-resolve'], ['udp', '0.0.0.0:68', 'dhclient'], ['tcp', '0.0.0.0:8080', 'python3 -m http.server']];
 
 const MISSIONS = [
-  { id: 'gw', text: 'Find your default gateway', hint: 'ip route', test: (c) => /^(ip r(oute)?|route( -n)?|netstat -rn?)\b/.test(c) },
-  { id: 'myip', text: 'Find your own IP address', hint: 'ip addr', test: (c) => /^(ip a(ddr)?|ifconfig|ipconfig|hostname -I)\b/.test(c) },
-  { id: 'ping', text: 'Check you can reach example.com', hint: 'ping example.com', test: (c) => /^ping\b.*example\.com/.test(c) },
-  { id: 'mx', text: 'Find the mail server (MX) of google.com', hint: 'dig google.com MX', test: (c) => /^(dig|nslookup|host)\b.*google\.com.*mx|^(dig|nslookup|host)\b.*mx.*google\.com|nslookup -type=mx google\.com/i.test(c) },
-  { id: 'trace', text: 'Trace the route to wikipedia.org', hint: 'traceroute wikipedia.org', test: (c) => /^(traceroute|tracert|mtr)\b.*wikipedia\.org/.test(c) },
-  { id: 'arp', text: 'Show the MAC addresses your laptop knows', hint: 'arp -a', test: (c) => /^(arp|ip n(eigh)?)\b/.test(c) },
-  { id: 'ports', text: 'Which local port is the web server listening on?', hint: 'ss -tuln', test: (c) => /^(ss|netstat)\b.*l/.test(c) },
-  { id: 'nas', text: 'Is SSH (port 22) open on nas.home?', hint: 'nc -zv nas.home 22', test: (c) => /^(nc|ncat|telnet)\b.*nas\.home.*22/.test(c) },
-  { id: 'curl', text: 'Get the HTTP headers of wikipedia.org', hint: 'curl -I https://wikipedia.org', test: (c) => /^curl\b.*-I.*wikipedia\.org|^curl\b.*wikipedia\.org.*-I/.test(c) },
-  { id: 'broken', text: 'Diagnose: why does blackhole.example not load?', hint: 'ping / traceroute / nc it', test: (c) => /blackhole\.example/.test(c) && /^(traceroute|mtr|nc|curl)/.test(c) },
+  { id: 'gw', text: tr('Find your default gateway', 'Finde dein Default-Gateway'), hint: 'ip route', test: (c) => /^(ip r(oute)?|route( -n)?|netstat -rn?)\b/.test(c) },
+  { id: 'myip', text: tr('Find your own IP address', 'Finde deine eigene IP-Adresse'), hint: 'ip addr', test: (c) => /^(ip a(ddr)?|ifconfig|ipconfig|hostname -I)\b/.test(c) },
+  { id: 'ping', text: tr('Check you can reach example.com', 'Prüfe, ob du example.com erreichst'), hint: 'ping example.com', test: (c) => /^ping\b.*example\.com/.test(c) },
+  { id: 'mx', text: tr('Find the mail server (MX) of google.com', 'Finde den Mailserver (MX) von google.com'), hint: 'dig google.com MX', test: (c) => /^(dig|nslookup|host)\b.*google\.com.*mx|^(dig|nslookup|host)\b.*mx.*google\.com|nslookup -type=mx google\.com/i.test(c) },
+  { id: 'trace', text: tr('Trace the route to wikipedia.org', 'Verfolge den Weg zu wikipedia.org'), hint: 'traceroute wikipedia.org', test: (c) => /^(traceroute|tracert|mtr)\b.*wikipedia\.org/.test(c) },
+  { id: 'arp', text: tr('Show the MAC addresses your laptop knows', 'Zeig die MAC-Adressen, die dein Laptop kennt'), hint: 'arp -a', test: (c) => /^(arp|ip n(eigh)?)\b/.test(c) },
+  { id: 'ports', text: tr('Which local port is the web server listening on?', 'Auf welchem lokalen Port lauscht der Webserver?'), hint: 'ss -tuln', test: (c) => /^(ss|netstat)\b.*l/.test(c) },
+  { id: 'nas', text: tr('Is SSH (port 22) open on nas.home?', 'Ist SSH (Port 22) auf nas.home offen?'), hint: 'nc -zv nas.home 22', test: (c) => /^(nc|ncat|telnet)\b.*nas\.home.*22/.test(c) },
+  { id: 'curl', text: tr('Get the HTTP headers of wikipedia.org', 'Hol die HTTP-Header von wikipedia.org'), hint: 'curl -I https://wikipedia.org', test: (c) => /^curl\b.*-I.*wikipedia\.org|^curl\b.*wikipedia\.org.*-I/.test(c) },
+  { id: 'broken', text: tr('Diagnose: why does blackhole.example not load?', 'Diagnose: Warum lädt blackhole.example nicht?'), hint: tr('ping / traceroute / nc it', 'mit ping / traceroute / nc prüfen'), test: (c) => /blackhole\.example/.test(c) && /^(traceroute|mtr|nc|curl)/.test(c) },
 ];
 
 const COMMANDS = ['help', 'clear', 'history', 'ip addr', 'ip route', 'ip neigh', 'ifconfig', 'arp -a', 'ping', 'traceroute', 'mtr', 'dig', 'nslookup', 'host', 'curl -I', 'nc -zv', 'ss -tuln', 'netstat -tuln', 'whoami', 'hostname', 'cat /etc/resolv.conf', 'cat /etc/hosts', 'missions'];
@@ -46,13 +48,13 @@ function resolve(name) {
 }
 
 export function terminal(mount) {
-  const w = widgetShell('ada@laptop: ~', { foot: '<span id="term-foot">Type <b>help</b> to see every command · <b>missions</b> to see your goals</span>' });
+  const w = widgetShell('ada@laptop: ~', { foot: `<span id="term-foot">${tr('Type <b>help</b> to see every command · <b>missions</b> to see your goals', 'Tippe <b>help</b> für alle Befehle · <b>missions</b> für deine Ziele')}</span>` });
   mount.appendChild(w);
   const body = $('.widget-body', w);
   body.style.padding = '0';
   body.innerHTML = `<div class="term-grid">
     <div class="term" id="term"><div id="term-out"></div><div class="term-line"><span class="term-ps">ada@laptop:~$</span><input id="term-in" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="terminal input"></div></div>
-    <aside class="term-missions"><h4>Missions <span id="term-count" class="tag mint">0/${MISSIONS.length}</span></h4><ol id="term-ms"></ol></aside>
+    <aside class="term-missions"><h4>${tr('Missions', 'Missionen')} <span id="term-count" class="tag mint">0/${MISSIONS.length}</span></h4><ol id="term-ms"></ol></aside>
   </div>`;
   const out = $('#term-out', body), input = $('#term-in', body), term = $('#term', body);
   const done = new Set(MISSIONS.filter((m) => store.get().awarded['term-' + m.id]).map((m) => m.id));
@@ -61,21 +63,21 @@ export function terminal(mount) {
   onCleanup(() => (alive = false));
 
   const renderMissions = () => {
-    $('#term-ms', body).innerHTML = MISSIONS.map((m) => `<li class="${done.has(m.id) ? 'ok' : ''}"><span>${esc(m.text)}</span><button class="term-hint" data-h="${esc(m.hint)}" title="Show hint">?</button></li>`).join('');
+    $('#term-ms', body).innerHTML = MISSIONS.map((m) => `<li class="${done.has(m.id) ? 'ok' : ''}"><span>${esc(m.text)}</span><button class="term-hint" data-h="${esc(m.hint)}" title="${tr('Show hint', 'Tipp zeigen')}">?</button></li>`).join('');
     $('#term-count', body).textContent = `${done.size}/${MISSIONS.length}`;
   };
   renderMissions();
   body.addEventListener('click', (e) => {
     const b = e.target.closest('.term-hint');
-    if (b) { input.value = b.dataset.h.includes('/') && !b.dataset.h.startsWith('curl') ? '' : b.dataset.h; if (!input.value) print(`<span class="t">hint: ${esc(b.dataset.h)}</span>`); input.focus(); return; }
+    if (b) { input.value = b.dataset.h.includes('/') && !b.dataset.h.startsWith('curl') ? '' : b.dataset.h; if (!input.value) print(`<span class="t">${tr('hint', 'Tipp')}: ${esc(b.dataset.h)}</span>`); input.focus(); return; }
     if (e.target.closest('#term')) input.focus({ preventScroll: true });
   });
 
   const print = (html = '') => { const d = document.createElement('div'); d.innerHTML = html; out.appendChild(d); term.scrollTop = term.scrollHeight; };
   const slow = async (lines, ms = 220) => { for (const l of lines) { if (!alive) return; print(l); await sleep(ms); } };
 
-  print('<span class="g">PacketCraft OS 1.0</span> <span class="t">— simulated terminal. Nothing here touches your real network.</span>');
-  print('<span class="t">Try: </span><span class="y">ip addr</span><span class="t">, </span><span class="y">ping example.com</span><span class="t">, </span><span class="y">dig google.com MX</span><span class="t">, </span><span class="y">traceroute wikipedia.org</span>');
+  print(`<span class="g">PacketCraft OS 1.0</span> <span class="t">— ${tr('simulated terminal. Nothing here touches your real network.', 'simuliertes Terminal. Nichts hier berührt dein echtes Netz.')}</span>`);
+  print(`<span class="t">${tr('Try', 'Probier')}: </span><span class="y">ip addr</span><span class="t">, </span><span class="y">ping example.com</span><span class="t">, </span><span class="y">dig google.com MX</span><span class="t">, </span><span class="y">traceroute wikipedia.org</span>`);
   print('');
 
   async function run(raw) {
@@ -89,8 +91,8 @@ export function terminal(mount) {
     try { await exec(c, args, lc); } catch (e) { print(`<span class="r">error: ${esc(e.message)}</span>`); }
     for (const m of MISSIONS) if (!done.has(m.id) && m.test(lc)) {
       done.add(m.id); renderMissions();
-      store.award('term-' + m.id, 10, `Mission: ${m.text}`);
-      if (done.size === MISSIONS.length) store.award('term-all', 40, 'Terminal master — all missions');
+      store.award("term-" + m.id, 10, `Mission: ${m.text}`);
+      if (done.size === MISSIONS.length) store.award('term-all', 40, tr('Terminal master — all missions', 'Terminal-Meister – alle Missionen'));
     }
     print('');
   }
@@ -99,13 +101,13 @@ export function terminal(mount) {
     const target = args.slice(1).filter((a) => !a.startsWith('-') && !/^\d+$/.test(a) && !/^(mx|a|aaaa|ns|txt|cname|any)$/i.test(a))[0];
     switch (c) {
       case 'help':
-        print('<span class="v">Network</span>   ip addr · ip route · ip neigh · arp -a · ifconfig');
-        print('<span class="v">Reach</span>     ping &lt;host&gt; [-c n] · traceroute &lt;host&gt; · mtr &lt;host&gt;');
+        print(`<span class="v">${tr('Network', 'Netzwerk')}</span>   ip addr · ip route · ip neigh · arp -a · ifconfig`);
+        print(`<span class="v">${tr('Reach', 'Erreichbar')}</span>     ping &lt;host&gt; [-c n] · traceroute &lt;host&gt; · mtr &lt;host&gt;`);
         print('<span class="v">DNS</span>       dig &lt;name&gt; [A|AAAA|MX|NS|TXT] · nslookup &lt;name&gt; · host &lt;name&gt; · dig +trace &lt;name&gt;');
-        print('<span class="v">Services</span>  nc -zv &lt;host&gt; &lt;port&gt; · curl -I &lt;url&gt; · ss -tuln');
-        print('<span class="v">Files</span>     cat /etc/resolv.conf · cat /etc/hosts');
+        print(`<span class="v">${tr('Services', 'Dienste')}</span>  nc -zv &lt;host&gt; &lt;port&gt; · curl -I &lt;url&gt; · ss -tuln`);
+        print(`<span class="v">${tr('Files', 'Dateien')}</span>     cat /etc/resolv.conf · cat /etc/hosts`);
         print('<span class="v">Shell</span>     clear · history · missions · whoami · hostname');
-        print('<span class="t">Known hosts: example.com, www.example.com, wikipedia.org, google.com, one.one.one.one, dns.google, nas.home, printer.home, router.home, blackhole.example</span>');
+        print(`<span class="t">${tr('Known hosts', 'Bekannte Hosts')}: example.com, www.example.com, wikipedia.org, google.com, one.one.one.one, dns.google, nas.home, printer.home, router.home, blackhole.example</span>`);
         return;
       case 'clear': out.innerHTML = ''; return;
       case 'history': hist.forEach((h, i) => print(`${String(i + 1).padStart(4)}  ${esc(h)}`)); return;
@@ -134,8 +136,8 @@ export function terminal(mount) {
       case 'nslookup': case 'host': return nslookup(c, args, lc);
       case 'curl': return curl(target, lc);
       case 'nc': case 'ncat': case 'telnet': return nc(args);
-      case 'exit': print('There is no escape. Try <span class="y">help</span>.'); return;
-      default: print(`<span class="r">${esc(c)}: command not found</span> <span class="t">— type help</span>`);
+      case 'exit': print(tr('There is no escape. Try <span class="y">help</span>.', 'Es gibt kein Entkommen. Probier <span class="y">help</span>.')); return;
+      default: print(`<span class="r">${esc(c)}: command not found</span> <span class="t">— ${tr('type help', 'tippe help')}</span>`);
     }
   }
 
@@ -144,7 +146,7 @@ export function terminal(mount) {
     print('    inet <span class="g">127.0.0.1/8</span> scope host lo');
     print('2: <span class="y">wlan0</span>: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 state UP');
     print(`    link/ether <span class="v">${ME.mac}</span> brd ff:ff:ff:ff:ff:ff`);
-    print(`    inet <span class="g">${ME.ip}/${ME.mask}</span> brd 192.168.1.255 scope global dynamic wlan0 <span class="t">(DHCP lease 86400s)</span>`);
+    print(`    inet <span class="g">${ME.ip}/${ME.mask}</span> brd 192.168.1.255 scope global dynamic wlan0 <span class="t">(${tr('DHCP lease 86400s', 'DHCP-Lease 86400 s')})</span>`);
     print(`    inet6 <span class="g">${ME.ip6}/64</span> scope global dynamic`);
     print('    inet6 fe80::3e22:fbff:fe9a:104e/64 scope link');
   }
@@ -157,7 +159,7 @@ export function terminal(mount) {
     }
     print(`<span class="g">default via ${ME.gw}</span> dev wlan0 proto dhcp metric 600`);
     print('192.168.1.0/24 dev wlan0 proto kernel scope link src 192.168.1.42');
-    print('<span class="t"># "default via" = your default gateway: everything not on 192.168.1.0/24 goes there</span>');
+    print(`<span class="t"># ${tr('"default via" = your default gateway: everything not on 192.168.1.0/24 goes there', '„default via“ = dein Default-Gateway: alles außerhalb von 192.168.1.0/24 geht dorthin')}</span>`);
   }
   function arp(neigh) {
     const rows = [['router.home', HOSTS['router.home']], ['nas.home', HOSTS['nas.home']], ['printer.home', HOSTS['printer.home']]];
@@ -166,12 +168,12 @@ export function terminal(mount) {
   function listening() {
     print('Netid State  Local Address:Port       Process');
     LISTEN.forEach(([p, a, proc]) => print(`${p.padEnd(5)} ${p === 'udp' ? 'UNCONN' : 'LISTEN'} ${a.padEnd(24)} <span class="${proc.includes('http') ? 'g' : 't'}">${proc}</span>`));
-    print('<span class="t"># 0.0.0.0 = reachable from the network · 127.0.0.1 = this machine only</span>');
+    print(`<span class="t"># ${tr('0.0.0.0 = reachable from the network · 127.0.0.1 = this machine only', '0.0.0.0 = aus dem Netz erreichbar · 127.0.0.1 = nur dieser Rechner')}</span>`);
   }
   async function ping(target, count, v6) {
     if (!target) return print('ping: usage error: Destination address required');
     const r = resolve(target);
-    if (!r) return print(`ping: ${esc(target)}: <span class="r">Name or service not known</span> <span class="t">(DNS lookup failed)</span>`);
+    if (!r) return print(`ping: ${esc(target)}: <span class="r">Name or service not known</span> <span class="t">(${tr('DNS lookup failed', 'DNS-Abfrage fehlgeschlagen')})</span>`);
     const h = r.h || { rtt: 30, hops: 10 };
     const ip = v6 ? h.ip6 : r.ip;
     if (!ip) return print(`ping: ${esc(target)}: Address family for hostname not supported`);
@@ -190,7 +192,7 @@ export function terminal(mount) {
     const loss = Math.round(((n - ok) / n) * 100);
     print(`${n} packets transmitted, ${ok} received, <span class="${loss ? 'r' : 'g'}">${loss}% packet loss</span>`);
     if (times.length) print(`rtt min/avg/max = ${Math.min(...times)}/${(times.reduce((a, b) => a + b, 0) / times.length).toFixed(1)}/${Math.max(...times)} ms`);
-    if (h.blackhole) print('<span class="t"># No replies, but DNS worked. Next: traceroute to see where packets die.</span>');
+    if (h.blackhole) print(`<span class="t"># ${tr('No replies, but DNS worked. Next: traceroute to see where packets die.', 'Keine Antworten, aber DNS ging. Als Nächstes: traceroute, um zu sehen, wo Pakete sterben.')}</span>`);
   }
   async function trace(target) {
     if (!target) return print('Usage: traceroute host');
@@ -203,14 +205,14 @@ export function terminal(mount) {
     for (let i = 0; i < hops; i++) {
       await sleep(260); if (!alive) return;
       const base = Math.round(1 + (h.rtt * (i + 1)) / h.hops);
-      if (i === 2 && Math.random() < 0.6) { print(` ${String(i + 1).padStart(2)}  * * *  <span class="t">(router ignores probes — that's normal)</span>`); continue; }
+      if (i === 2 && Math.random() < 0.6) { print(` ${String(i + 1).padStart(2)}  * * *  <span class="t">(${tr('router ignores probes — that’s normal', 'Router ignoriert Proben – das ist normal')})</span>`); continue; }
       const t = () => (base + Math.random() * 2).toFixed(1);
       print(` ${String(i + 1).padStart(2)}  ${PATH[i] || `hop${i}.net`}  ${t()} ms  ${t()} ms  ${t()} ms`);
     }
     if (h.blackhole) {
       for (let i = hops; i < hops + 4; i++) { await sleep(500); print(` ${String(i + 1).padStart(2)}  <span class="r">* * *</span>`); }
-      print('<span class="r"># Packets die after hop 7: the destination network is unreachable (or drops everything).</span>');
-      print('<span class="t"># Diagnosis: DNS ✓, local network ✓, ISP path ✓ → the problem is on their side. Nothing to fix locally.</span>');
+      print(`<span class="r"># ${tr('Packets die after hop 7: the destination network is unreachable (or drops everything).', 'Pakete sterben nach Hop 7: Das Zielnetz ist nicht erreichbar (oder verwirft alles).')}</span>`);
+      print(`<span class="t"># ${tr('Diagnosis: DNS ✓, local network ✓, ISP path ✓ → the problem is on their side. Nothing to fix locally.', 'Diagnose: DNS ✓, lokales Netz ✓, Weg über den Provider ✓ → das Problem liegt auf deren Seite. Lokal nichts zu reparieren.')}</span>`);
       return;
     }
     await sleep(260);
@@ -219,7 +221,7 @@ export function terminal(mount) {
   async function dig(args, lc) {
     const name = args.slice(1).find((a) => !a.startsWith('+') && !a.startsWith('@') && !/^(a|aaaa|mx|ns|txt|cname|any)$/i.test(a));
     let type = (args.slice(1).find((a) => /^(a|aaaa|mx|ns|txt|cname|any)$/i.test(a)) || 'A').toUpperCase();
-    if (!name) return print('<span class="t">usage: dig name [type] — e.g. dig example.com MX</span>');
+    if (!name) return print(`<span class="t">${tr('usage: dig name [type] — e.g. dig example.com MX', 'Aufruf: dig Name [Typ] – z. B. dig example.com MX')}</span>`);
     const server = (args.find((a) => a.startsWith('@')) || '@' + ME.dns).slice(1);
     if (lc.includes('+trace')) return digTrace(name);
     await sleep(250);
@@ -241,7 +243,7 @@ export function terminal(mount) {
     print(`;; flags: qr rd ra; QUERY: 1, ANSWER: ${ans.length}`);
     print(';; QUESTION SECTION:'); print(`;${esc(name)}.\t\tIN\t${type}`);
     if (ans.length) { print(';; ANSWER SECTION:'); ans.forEach((a) => print(`<span class="g">${esc(a)}</span>`)); }
-    else if (r) print('<span class="t">;; (no records of this type — try A, AAAA, MX, NS or TXT)</span>');
+    else if (r) print(`<span class="t">;; (${tr('no records of this type — try A, AAAA, MX, NS or TXT', 'keine Einträge dieses Typs – probier A, AAAA, MX, NS oder TXT')})</span>`);
     print(`;; Query time: ${rand(2, 40)} msec`);
     print(`;; SERVER: ${esc(server)}#53(${esc(server)}) (UDP)`);
   }
@@ -249,12 +251,12 @@ export function terminal(mount) {
     const r = resolve(name);
     const tld = name.split('.').pop();
     await slow([
-      `.\t\t\t518400\tIN\tNS\ta.root-servers.net.  <span class="t">(from local resolver)</span>`,
+      `.\t\t\t518400\tIN\tNS\ta.root-servers.net.  <span class="t">(${tr('from local resolver', 'vom lokalen Resolver')})</span>`,
       `<span class="t">;; Received 239 bytes from 1.1.1.1#53 in 6 ms</span>`,
-      `${tld}.\t\t172800\tIN\tNS\ta.gtld-servers.net.  <span class="t">(referral from root)</span>`,
+      `${tld}.\t\t172800\tIN\tNS\ta.gtld-servers.net.  <span class="t">(${tr('referral from root', 'Verweis von der Root')})</span>`,
       `<span class="t">;; Received 1172 bytes from 198.41.0.4#53(a.root-servers.net) in 14 ms</span>`,
-      r?.h?.ns ? `${name}.\t172800\tIN\tNS\t${r.h.ns[0]}.  <span class="t">(referral from .${tld})</span>` : `<span class="r">;; NXDOMAIN from .${tld} servers</span>`,
-      r ? `<span class="g">${r.name}.\t300\tIN\tA\t${r.ip}</span>  <span class="t">(authoritative answer)</span>` : '',
+      r?.h?.ns ? `${name}.\t172800\tIN\tNS\t${r.h.ns[0]}.  <span class="t">(${tr(`referral from .${tld}`, `Verweis von .${tld}`)})</span>` : `<span class="r">;; NXDOMAIN from .${tld} servers</span>`,
+      r ? `<span class="g">${r.name}.\t300\tIN\tA\t${r.ip}</span>  <span class="t">(${tr('authoritative answer', 'autoritative Antwort')})</span>` : '',
     ], 380);
   }
   async function nslookup(c, args, lc) {
@@ -285,8 +287,8 @@ export function terminal(mount) {
     if (!r.h.ports.includes(https ? 443 : 80)) return print(`curl: (7) Failed to connect to ${r.name} port ${https ? 443 : 80}: <span class="r">Connection refused</span>`);
     await sleep(400);
     const head = lc.includes('-i') || lc.includes('-v') || lc.includes('--head');
-    if (!head) { print(`<span class="t">&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;title&gt;${esc(r.name)}&lt;/title&gt;… (body truncated — use curl -I to see only headers)</span>`); return; }
-    if (!https) { print('HTTP/1.1 <span class="v">301 Moved Permanently</span>'); print(`Location: https://${r.name}/`); print('<span class="t"># Plain HTTP redirects to HTTPS</span>'); return; }
+    if (!head) { print(`<span class="t">&lt;!doctype html&gt;&lt;html&gt;&lt;head&gt;&lt;title&gt;${esc(r.name)}&lt;/title&gt;… (${tr('body truncated — use curl -I to see only headers', 'Inhalt gekürzt – curl -I zeigt nur die Header')})</span>`); return; }
+    if (!https) { print('HTTP/1.1 <span class="v">301 Moved Permanently</span>'); print(`Location: https://${r.name}/`); print(`<span class="t"># ${tr('Plain HTTP redirects to HTTPS', 'Unverschlüsseltes HTTP leitet auf HTTPS um')}</span>`); return; }
     print(`HTTP/2 <span class="g">200</span>`);
     print(`server: ${esc(r.h.server || 'nginx')}`);
     print('content-type: text/html; charset=UTF-8');
@@ -302,7 +304,7 @@ export function terminal(mount) {
     const r = resolve(host);
     if (!r) return print(`nc: getaddrinfo for host "${esc(host)}" port ${port}: Name or service not known`);
     await sleep(r.h.blackhole ? 1800 : 300);
-    if (r.h.blackhole) return print(`nc: connect to ${r.name} (${r.ip}) port ${port} (tcp) <span class="r">timed out</span>: Operation now in progress <span class="t"># a timeout = packets silently dropped (firewall or dead host); “refused” would mean the host answered</span>`);
+    if (r.h.blackhole) return print(`nc: connect to ${r.name} (${r.ip}) port ${port} (tcp) <span class="r">timed out</span>: Operation now in progress <span class="t"># ${tr('a timeout = packets silently dropped (firewall or dead host); “refused” would mean the host answered', 'Timeout = Pakete still verworfen (Firewall oder toter Host); „refused“ hieße, der Host hat geantwortet')}</span>`);
     if (r.h.ports.includes(port)) print(`Connection to ${r.name} (${r.ip}) ${port} port [tcp] <span class="g">succeeded!</span>`);
     else print(`nc: connect to ${r.name} (${r.ip}) port ${port} (tcp) failed: <span class="r">Connection refused</span>`);
   }

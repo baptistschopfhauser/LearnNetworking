@@ -1,4 +1,7 @@
 import { h, $, $$, loop, setupCanvas, pointerPos, widgetShell, COLORS, store, sleep, ipToInt, intToIp, subnetInfo, maskFromPrefix, ipClass, rand, pick, inSubnet, esc } from '../core.js';
+import { tr } from '../i18n.js';
+// ipClass() returns English labels; German display names:
+const CLASS_DE = { 'Private (RFC 1918)': 'Privat (RFC 1918)', Loopback: 'Loopback', 'Link-local (APIPA)': 'Link-Local (APIPA)', 'Carrier-grade NAT': 'Carrier-Grade-NAT', Multicast: 'Multicast', Reserved: 'Reserviert', '"This" network': '„Dieses“ Netz', Public: 'Öffentlich' };
 
 /* =========================================================
    Subnet calculator with live bit view
@@ -16,8 +19,8 @@ export function subnet(mount) {
   const body = $('.widget-body', w);
   body.innerHTML = `
     <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:end;margin-bottom:18px">
-      <div class="field" style="flex:2;min-width:180px"><label>IP address</label><input class="input" id="sn-ip" value="192.168.10.77"></div>
-      <div class="field" style="flex:3;min-width:220px"><label>Prefix length: <span id="sn-plab" style="color:var(--mint)">/26</span></label><input type="range" id="sn-p" min="0" max="32" value="26"></div>
+      <div class="field" style="flex:2;min-width:180px"><label>${tr('IP address', 'IP-Adresse')}</label><input class="input" id="sn-ip" value="192.168.10.77"></div>
+      <div class="field" style="flex:3;min-width:220px"><label>${tr('Prefix length', 'Präfixlänge')}: <span id="sn-plab" style="color:var(--mint)">/26</span></label><input type="range" id="sn-p" min="0" max="32" value="26"></div>
     </div>
     <div class="bits" id="sn-bits"></div>
     <div class="subnet-bar" id="sn-bar"></div>
@@ -49,20 +52,20 @@ export function subnet(mount) {
     $('#sn-bar', body).innerHTML = Array.from({ length: count }, (_, i) =>
       `<div style="flex:1;background:${i === idx ? COLORS.mint : cols[i % 4] + '55'};color:${i === idx ? '#04110c' : COLORS.dim}">${count <= 8 ? shortLabel(parent.network + i * s.total, p) : i === idx ? 'you' : ''}</div>`).join('');
     const kv = [
-      ['Network', intToIp(s.network) + '/' + p],
-      ['Subnet mask', intToIp(s.mask)],
+      [tr('Network', 'Netz'), intToIp(s.network) + '/' + p],
+      [tr('Subnet mask', 'Subnetzmaske'), intToIp(s.mask)],
       ['Wildcard', intToIp(~s.mask >>> 0)],
-      ['Broadcast', p >= 31 ? '— (none)' : intToIp(s.broadcast)],
-      ['First host', intToIp(s.first)],
-      ['Last host', intToIp(s.last)],
-      ['Addresses', s.total.toLocaleString('en-US')],
-      ['Usable hosts', s.hosts.toLocaleString('en-US')],
+      ['Broadcast', p >= 31 ? tr('— (none)', '— (keiner)') : intToIp(s.broadcast)],
+      [tr('First host', 'Erster Host'), intToIp(s.first)],
+      [tr('Last host', 'Letzter Host'), intToIp(s.last)],
+      [tr('Addresses', 'Adressen'), s.total.toLocaleString('en-US')],
+      [tr('Usable hosts', 'Nutzbare Hosts'), s.hosts.toLocaleString('en-US')],
     ];
     $('#sn-kv', body).innerHTML = kv.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
-    $('#sn-foot', w).innerHTML = `<span class="tag ${ipClass(ip).startsWith('Public') ? 'orange' : 'mint'}">${ipClass(ip)}</span> <span>bar shows this /${p} among its ${count} siblings inside ${intToIp(parent.network)}/${parentP}</span>`;
+    $('#sn-foot', w).innerHTML = `<span class="tag ${ipClass(ip).startsWith('Public') ? 'orange' : 'mint'}">${tr(ipClass(ip), CLASS_DE[ipClass(ip)])}</span> <span>${tr(`bar shows this /${p} among its ${count} siblings inside ${intToIp(parent.network)}/${parentP}`, `Balken: dieses /${p} unter seinen ${count} Geschwistern in ${intToIp(parent.network)}/${parentP}`)}</span>`;
   }
   ipIn.addEventListener('input', render);
-  pIn.addEventListener('input', () => { render(); if (+pIn.value === 30) store.award('subnet-30', 5, 'Found the point-to-point /30'); });
+  pIn.addEventListener('input', () => { render(); if (+pIn.value === 30) store.award('subnet-30', 5, tr('Found the point-to-point /30', 'Das Punkt-zu-Punkt-/30 gefunden')); });
   render();
 }
 
@@ -70,7 +73,7 @@ export function subnet(mount) {
    Subnetting practice — random problems
    ========================================================= */
 export function subnetPractice(mount) {
-  const w = widgetShell('subnet.practice', { controls: '<span class="tag mint" id="sp-streak">streak 0</span>', foot: '<span id="sp-foot">Tip: find the block size (256 − mask octet) first.</span>' });
+  const w = widgetShell('subnet.practice', { controls: `<span class="tag mint" id="sp-streak">${tr('streak', 'Serie')} 0</span>`, foot: `<span id="sp-foot">${tr('Tip: find the block size (256 − mask octet) first.', 'Tipp: Erst die Blockgröße finden (256 − Masken-Oktett).')}</span>` });
   mount.appendChild(w);
   const body = $('.widget-body', w);
   let streak = 0, cur;
@@ -78,13 +81,13 @@ export function subnetPractice(mount) {
     const p = rand(18, 30);
     const ip = (rand(1, 223) * 2 ** 24 + rand(0, 255) * 2 ** 16 + rand(0, 255) * 256 + rand(1, 254)) >>> 0;
     cur = { ip, p, s: subnetInfo(ip, p) };
-    body.innerHTML = `<p style="color:var(--text);font-size:1.15rem;margin-bottom:16px">Host <code style="font-size:1.05rem">${intToIp(ip)}/${p}</code> — fill in:</p>
+    body.innerHTML = `<p style="color:var(--text);font-size:1.15rem;margin-bottom:16px">Host <code style="font-size:1.05rem">${intToIp(ip)}/${p}</code> — ${tr('fill in', 'ausfüllen')}:</p>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
-        <div class="field"><label>Network address</label><input class="input" data-k="net" placeholder="a.b.c.d"></div>
-        <div class="field"><label>Broadcast address</label><input class="input" data-k="bc" placeholder="a.b.c.d"></div>
-        <div class="field"><label>Usable hosts</label><input class="input" data-k="hosts" placeholder="number"></div>
+        <div class="field"><label>${tr('Network address', 'Netzadresse')}</label><input class="input" data-k="net" placeholder="a.b.c.d"></div>
+        <div class="field"><label>${tr('Broadcast address', 'Broadcastadresse')}</label><input class="input" data-k="bc" placeholder="a.b.c.d"></div>
+        <div class="field"><label>${tr('Usable hosts', 'Nutzbare Hosts')}</label><input class="input" data-k="hosts" placeholder="${tr('number', 'Zahl')}"></div>
       </div>
-      <div class="btn-row" style="margin-top:16px"><button class="btn small" id="sp-check">Check</button><button class="btn small ghost" id="sp-reveal">Reveal</button><button class="btn small ghost" id="sp-next">New problem</button></div>
+      <div class="btn-row" style="margin-top:16px"><button class="btn small" id="sp-check">${tr('Check', 'Prüfen')}</button><button class="btn small ghost" id="sp-reveal">${tr('Reveal', 'Auflösen')}</button><button class="btn small ghost" id="sp-next">${tr('New problem', 'Neue Aufgabe')}</button></div>
       <div id="sp-res" style="margin-top:12px"></div>`;
     $('#sp-check', body).onclick = check;
     $('#sp-reveal', body).onclick = () => reveal(true);
@@ -93,8 +96,8 @@ export function subnetPractice(mount) {
   }
   function reveal(giveUp) {
     const { s, p } = cur;
-    $('#sp-res', body).innerHTML = `<div class="kv"><div><small>Network</small><b>${intToIp(s.network)}</b></div><div><small>Broadcast</small><b>${intToIp(s.broadcast)}</b></div><div><small>Hosts</small><b>${s.hosts}</b></div><div><small>Mask</small><b>${intToIp(s.mask)}</b></div></div>`;
-    if (giveUp) { streak = 0; $('#sp-streak', w).textContent = 'streak 0'; }
+    $('#sp-res', body).innerHTML = `<div class="kv"><div><small>${tr('Network', 'Netz')}</small><b>${intToIp(s.network)}</b></div><div><small>Broadcast</small><b>${intToIp(s.broadcast)}</b></div><div><small>Hosts</small><b>${s.hosts}</b></div><div><small>${tr('Mask', 'Maske')}</small><b>${intToIp(s.mask)}</b></div></div>`;
+    if (giveUp) { streak = 0; $('#sp-streak', w).textContent = `${tr('streak', 'Serie')} 0`; }
   }
   function check() {
     const { s } = cur;
@@ -106,10 +109,10 @@ export function subnetPractice(mount) {
     [['net', okNet], ['bc', okBc], ['hosts', okH]].forEach(([k, ok]) => { if (ok) get(k).style.borderColor = COLORS.mint; });
     if (okNet && okBc && okH) {
       streak++;
-      $('#sp-streak', w).textContent = `streak ${streak}`;
-      store.award(`subnet-win-${streak}`, 10, `Correct! Streak ${streak}`);
+      $('#sp-streak', w).textContent = `${tr('streak', 'Serie')} ${streak}`;
+      store.award(`subnet-win-${streak}`, 10, tr(`Correct! Streak ${streak}`, `Richtig! Serie ${streak}`));
       reveal(false);
-      $('#sp-res', body).insertAdjacentHTML('afterbegin', `<p style="color:var(--mint);font-weight:600">✓ All correct — next one in a moment…</p>`);
+      $('#sp-res', body).insertAdjacentHTML('afterbegin', `<p style="color:var(--mint);font-weight:600">✓ ${tr('All correct — next one in a moment…', 'Alles richtig – gleich kommt die nächste …')}</p>`);
       setTimeout(next, 1600);
     } else {
       body.classList.add('shake'); setTimeout(() => body.classList.remove('shake'), 400);
@@ -129,9 +132,9 @@ export function switchSim(mount) {
     { n: 'D', mac: 'dd:04', ip: '192.168.1.40', port: 4 },
   ];
   const w = widgetShell('switch.sim', {
-    controls: `<label class="mono" style="font-size:.75rem;color:var(--muted)">from</label><div class="seg" id="sw-from">${hosts.map((x, i) => `<button class="${i === 0 ? 'on' : ''}" data-i="${i}">${x.n}</button>`).join('')}</div>
-      <label class="mono" style="font-size:.75rem;color:var(--muted)">to</label><div class="seg" id="sw-to">${hosts.map((x, i) => `<button class="${i === 2 ? 'on' : ''}" data-i="${i}">${x.n}</button>`).join('')}</div>`,
-    foot: `<button class="btn small" id="sw-send">Send frame</button><button class="btn small violet" id="sw-arp">ARP then send</button><button class="btn small ghost" id="sw-clear">Clear tables</button><span id="sw-msg"></span>`,
+    controls: `<label class="mono" style="font-size:.75rem;color:var(--muted)">${tr('from', 'von')}</label><div class="seg" id="sw-from">${hosts.map((x, i) => `<button class="${i === 0 ? 'on' : ''}" data-i="${i}">${x.n}</button>`).join('')}</div>
+      <label class="mono" style="font-size:.75rem;color:var(--muted)">${tr('to', 'an')}</label><div class="seg" id="sw-to">${hosts.map((x, i) => `<button class="${i === 2 ? 'on' : ''}" data-i="${i}">${x.n}</button>`).join('')}</div>`,
+    foot: `<button class="btn small" id="sw-send">${tr('Send frame', 'Rahmen senden')}</button><button class="btn small violet" id="sw-arp">${tr('ARP then send', 'Erst ARP, dann senden')}</button><button class="btn small ghost" id="sw-clear">${tr('Clear tables', 'Tabellen leeren')}</button><span id="sw-msg"></span>`,
   });
   mount.appendChild(w);
   const body = $('.widget-body', w);
@@ -139,9 +142,9 @@ export function switchSim(mount) {
   body.innerHTML = `<div style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(200px,1fr)">
     <div style="position:relative"><canvas></canvas></div>
     <div style="border-left:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:14px">
-      <div><h4 class="mono" style="font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Switch MAC table</h4>
-      <table class="mini-table"><thead><tr><th>MAC</th><th>Port</th></tr></thead><tbody id="sw-mac"><tr><td colspan="2" style="color:var(--muted)">empty</td></tr></tbody></table></div>
-      <div><h4 class="mono" style="font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">ARP cache on <span id="sw-arpn">A</span></h4>
+      <div><h4 class="mono" style="font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">${tr('Switch MAC table', 'MAC-Tabelle des Switches')}</h4>
+      <table class="mini-table"><thead><tr><th>MAC</th><th>Port</th></tr></thead><tbody id="sw-mac"><tr><td colspan="2" style="color:var(--muted)">${tr('empty', 'leer')}</td></tr></tbody></table></div>
+      <div><h4 class="mono" style="font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">${tr('ARP cache on', 'ARP-Cache von')} <span id="sw-arpn">A</span></h4>
       <table class="mini-table"><thead><tr><th>IP</th><th>MAC</th></tr></thead><tbody id="sw-arpt"></tbody></table></div>
     </div></div>`;
   if (window.innerWidth < 700) body.firstElementChild.style.gridTemplateColumns = '1fr';
@@ -163,10 +166,10 @@ export function switchSim(mount) {
   function renderTables(flashMac) {
     $('#sw-mac', body).innerHTML = macTable.size
       ? [...macTable].map(([m, p]) => `<tr class="${m === flashMac ? 'flash' : ''}"><td>${m}</td><td>${p}</td></tr>`).join('')
-      : `<tr><td colspan="2" style="color:var(--muted)">empty</td></tr>`;
+      : `<tr><td colspan="2" style="color:var(--muted)">${tr('empty', 'leer')}</td></tr>`;
     $('#sw-arpn', body).textContent = hosts[from].n;
     const a = arp[from];
-    $('#sw-arpt', body).innerHTML = a.size ? [...a].map(([ip, m]) => `<tr><td>${ip}</td><td>${m}</td></tr>`).join('') : `<tr><td colspan="2" style="color:var(--muted)">empty</td></tr>`;
+    $('#sw-arpt', body).innerHTML = a.size ? [...a].map(([ip, m]) => `<tr><td>${ip}</td><td>${m}</td></tr>`).join('') : `<tr><td colspan="2" style="color:var(--muted)">${tr('empty', 'leer')}</td></tr>`;
   }
   const msg = (t) => ($('#sw-msg', w).innerHTML = t);
 
@@ -179,30 +182,30 @@ export function switchSim(mount) {
     renderTables(learned ? src.mac : null);
     const dmac = broadcast ? 'ff:ff' : hosts[di].mac;
     if (!broadcast && macTable.has(dmac)) {
-      msg(`<span style="color:${COLORS.mint}">known</span> → forward only to port ${macTable.get(dmac)}`);
+      msg(`<span style="color:${COLORS.mint}">${tr('known', 'bekannt')}</span> → ${tr('forward only to port', 'nur an Port')} ${macTable.get(dmac)}`);
       await travel(sw, posHost(di), color, label);
       flashHost.set(di, { t: 1, ok: true });
     } else {
-      msg(broadcast ? `<span style="color:${COLORS.yellow}">broadcast</span> → flood all other ports` : `<span style="color:${COLORS.orange}">unknown ${dmac}</span> → flood all other ports`);
+      msg(broadcast ? `<span style="color:${COLORS.yellow}">Broadcast</span> → ${tr('flood all other ports', 'an alle anderen Ports fluten')}` : `<span style="color:${COLORS.orange}">${tr('unknown', 'unbekannt')} ${dmac}</span> → ${tr('flood all other ports', 'an alle anderen Ports fluten')}`);
       await Promise.all(hosts.map((x, i) => i === si ? null : travel(sw, posHost(i), color, label).then(() => flashHost.set(i, { t: 1, ok: broadcast || i === di }))));
     }
   }
 
   async function send(withArp) {
-    if (busy || from === to) { if (from === to) msg('pick two different hosts'); return; }
+    if (busy || from === to) { if (from === to) msg(tr('pick two different hosts', 'wähle zwei verschiedene Hosts')); return; }
     busy = true;
     const s = hosts[from], d = hosts[to];
     if (withArp && !arp[from].has(d.ip)) {
-      msg(`${s.n}: "Who has ${d.ip}? Tell ${s.ip}"`);
+      msg(tr(`${s.n}: "Who has ${d.ip}? Tell ${s.ip}"`, `${s.n}: „Wer hat ${d.ip}? Sag es ${s.ip}“`));
       await frame(from, to, true, 'ARP?', COLORS.yellow);
-      msg(`${d.n}: "${d.ip} is at ${d.mac}"`);
+      msg(tr(`${d.n}: "${d.ip} is at ${d.mac}"`, `${d.n}: „${d.ip} ist bei ${d.mac}“`));
       arp[to].set(s.ip, s.mac);
       await frame(to, from, false, 'ARP!', COLORS.violet);
       arp[from].set(d.ip, d.mac); renderTables();
       await sleep(300);
-    } else if (withArp) msg('already cached — no ARP needed');
+    } else if (withArp) msg(tr('already cached — no ARP needed', 'schon im Cache – kein ARP nötig'));
     await frame(from, to, false, 'data', COLORS.mint);
-    if (macTable.size === 4) store.award('switch-full', 10, 'Switch learned every MAC');
+    if (macTable.size === 4) store.award('switch-full', 10, tr('Switch learned every MAC', 'Switch kennt jede MAC'));
     busy = false;
   }
 
@@ -213,7 +216,7 @@ export function switchSim(mount) {
   segPick('sw-to', (i) => (to = i));
   $('#sw-send', w).onclick = () => send(false);
   $('#sw-arp', w).onclick = () => send(true);
-  $('#sw-clear', w).onclick = () => { if (busy) return; macTable.clear(); arp.forEach((a) => a.clear()); renderTables(); msg('tables cleared'); };
+  $('#sw-clear', w).onclick = () => { if (busy) return; macTable.clear(); arp.forEach((a) => a.clear()); renderTables(); msg(tr('tables cleared', 'Tabellen geleert')); };
   renderTables();
 
   loop((dt) => {
@@ -245,7 +248,7 @@ export function switchSim(mount) {
       ctx.beginPath(); ctx.roundRect(p.x - 46, p.y - 28, 92, 56, 12); ctx.fill(); ctx.stroke();
       ctx.fillStyle = COLORS.text; ctx.font = '800 16px Bricolage Grotesque, sans-serif'; ctx.fillText('PC ' + x.n, p.x, p.y - 9);
       ctx.fillStyle = COLORS.muted; ctx.font = '10px JetBrains Mono'; ctx.fillText(x.mac, p.x, p.y + 9);
-      if (f && !f.ok) { ctx.fillStyle = COLORS.danger; ctx.fillText('drop (not me)', p.x, p.y + 40); }
+      if (f && !f.ok) { ctx.fillStyle = COLORS.danger; ctx.fillText(tr('drop (not me)', 'verwerfen (nicht für mich)'), p.x, p.y + 40); }
     });
     for (let k = dots.length - 1; k >= 0; k--) {
       const d = dots[k];
@@ -266,23 +269,23 @@ export function switchSim(mount) {
    ========================================================= */
 export function lpm(mount) {
   const routes = [
-    { p: '0.0.0.0/0', via: '203.0.113.1', ifc: 'wan0', note: 'default route' },
+    { p: '0.0.0.0/0', via: '203.0.113.1', ifc: 'wan0', note: tr('default route', 'Default-Route') },
     { p: '10.0.0.0/8', via: '10.255.0.1', ifc: 'eth1' },
     { p: '10.20.0.0/16', via: '10.20.0.1', ifc: 'eth2' },
-    { p: '10.20.30.0/24', via: 'direct', ifc: 'eth3' },
+    { p: '10.20.30.0/24', via: tr('direct', 'direkt'), ifc: 'eth3' },
     { p: '10.20.30.128/25', via: '10.20.30.129', ifc: 'eth4' },
     { p: '172.16.0.0/12', via: '172.16.0.1', ifc: 'eth5' },
     { p: '192.168.0.0/16', via: '192.168.0.1', ifc: 'eth6' },
   ].map((r) => { const [a, b] = r.p.split('/'); return { ...r, net: ipToInt(a), len: +b }; });
 
   const w = widgetShell('router.lookup', {
-    controls: `<button class="btn small violet" id="lpm-game">🎯 Quiz me</button>`,
-    foot: '<span id="lpm-foot">Type a destination — matching routes glow; the longest match wins.</span>',
+    controls: `<button class="btn small violet" id="lpm-game">🎯 ${tr('Quiz me', 'Teste mich')}</button>`,
+    foot: `<span id="lpm-foot">${tr('Type a destination — matching routes glow; the longest match wins.', 'Gib ein Ziel ein – passende Routen leuchten; der längste Treffer gewinnt.')}</span>`,
   });
   mount.appendChild(w);
   const body = $('.widget-body', w);
-  body.innerHTML = `<div class="field" style="margin-bottom:14px"><label>Destination IP</label><input class="input" id="lpm-ip" value="10.20.30.200"></div>
-    <div class="tbl-wrap"><table class="mini-table" id="lpm-t"><thead><tr><th>Prefix</th><th>Next hop</th><th>Interface</th><th>Match?</th></tr></thead><tbody></tbody></table></div>`;
+  body.innerHTML = `<div class="field" style="margin-bottom:14px"><label>${tr('Destination IP', 'Ziel-IP')}</label><input class="input" id="lpm-ip" value="10.20.30.200"></div>
+    <div class="tbl-wrap"><table class="mini-table" id="lpm-t"><thead><tr><th>${tr('Prefix', 'Präfix')}</th><th>Next Hop</th><th>Interface</th><th>${tr('Match?', 'Passt?')}</th></tr></thead><tbody></tbody></table></div>`;
   const tb = $('tbody', body), ipIn = $('#lpm-ip', body);
   let game = null; // {ip, answer, score, n}
 
@@ -296,9 +299,9 @@ export function lpm(mount) {
       const show = !game;
       return `<tr data-i="${i}" class="${show && i === best ? 'hit' : ''}" style="cursor:${game ? 'pointer' : 'default'}">
         <td><b style="color:${show && m ? COLORS.text : COLORS.dim}">${r.p}</b> ${r.note ? `<span style="color:var(--muted)">(${r.note})</span>` : ''}</td><td>${r.via}</td><td>${r.ifc}</td>
-        <td>${game ? '?' : m ? (i === best ? `<span style="color:${COLORS.violet}">◆ best /${r.len}</span>` : `<span style="color:${COLORS.dim}">✓ /${r.len}</span>`) : '<span style="color:var(--muted)">—</span>'}</td></tr>`;
+        <td>${game ? '?' : m ? (i === best ? `<span style="color:${COLORS.violet}">◆ ${tr('best', 'beste')} /${r.len}</span>` : `<span style="color:${COLORS.dim}">✓ /${r.len}</span>`) : '<span style="color:var(--muted)">—</span>'}</td></tr>`;
     }).join('');
-    if (!game && best >= 0) $('#lpm-foot', w).innerHTML = `→ forward via <b style="color:${COLORS.mint}">${routes[best].ifc}</b> (${routes[best].via}) — matched ${routes[best].p}`;
+    if (!game && best >= 0) $('#lpm-foot', w).innerHTML = `→ ${tr('forward via', 'weiterleiten über')} <b style="color:${COLORS.mint}">${routes[best].ifc}</b> (${routes[best].via}) — ${tr('matched', 'Treffer')} ${routes[best].p}`;
     return best;
   }
   ipIn.addEventListener('input', () => { if (game) return; render(); });
@@ -310,7 +313,7 @@ export function lpm(mount) {
     game.ip = ipToInt(ipS);
     game.answer = (() => { let b = -1; routes.forEach((r, i) => { if (inSubnet(game.ip, r.net, r.len) && (b < 0 || r.len > routes[b].len)) b = i; }); return b; })();
     render();
-    $('#lpm-foot', w).innerHTML = `Round ${game.n + 1}/5 — click the route the router will use · score <b style="color:${COLORS.mint}">${game.score}</b>`;
+    $('#lpm-foot', w).innerHTML = `${tr('Round', 'Runde')} ${game.n + 1}/5 — ${tr('click the route the router will use', 'klick die Route, die der Router nimmt')} · ${tr('score', 'Punkte')} <b style="color:${COLORS.mint}">${game.score}</b>`;
   }
   tb.addEventListener('click', (e) => {
     if (!game) return;
@@ -325,16 +328,16 @@ export function lpm(mount) {
       if (game.n >= 5) {
         const s = game.score; game = null; ipIn.disabled = false;
         render();
-        $('#lpm-foot', w).innerHTML = `Finished: <b style="color:${COLORS.mint}">${s}/5</b> correct.`;
-        if (s >= 4) store.award('lpm-quiz', 20, 'Routing table master');
-        $('#lpm-game', w).textContent = '🎯 Quiz me';
+        $('#lpm-foot', w).innerHTML = `${tr('Finished', 'Fertig')}: <b style="color:${COLORS.mint}">${s}/5</b> ${tr('correct', 'richtig')}.`;
+        if (s >= 4) store.award('lpm-quiz', 20, tr('Routing table master', 'Routingtabellen-Meister'));
+        $('#lpm-game', w).textContent = `🎯 ${tr('Quiz me', 'Teste mich')}`;
       } else round();
     }, 700);
   });
   $('#lpm-game', w).onclick = () => {
     if (game) return;
     game = { score: 0, n: 0 };
-    $('#lpm-game', w).textContent = '🎯 Playing…';
+    $('#lpm-game', w).textContent = `🎯 ${tr('Playing…', 'Läuft …')}`;
     round();
   };
   render();
@@ -349,8 +352,8 @@ export function dijkstra(mount) {
   const body = $('.widget-body', w);
   body.style.padding = '0';
   body.innerHTML = `<div style="display:grid;grid-template-columns:minmax(0,1.7fr) minmax(190px,1fr)" class="dj-grid"><div><canvas></canvas></div>
-    <div style="border-left:1px solid var(--line);padding:14px"><h4 class="mono" style="font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Routing table of <span id="dj-src">R1</span></h4>
-    <table class="mini-table"><thead><tr><th>Dest</th><th>Cost</th><th>Next hop</th></tr></thead><tbody id="dj-t"></tbody></table></div></div>`;
+    <div style="border-left:1px solid var(--line);padding:14px"><h4 class="mono" style="font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">${tr('Routing table of', 'Routingtabelle von')} <span id="dj-src">R1</span></h4>
+    <table class="mini-table"><thead><tr><th>${tr('Dest', 'Ziel')}</th><th>${tr('Cost', 'Kosten')}</th><th>Next Hop</th></tr></thead><tbody id="dj-t"></tbody></table></div></div>`;
   if (window.innerWidth < 700) $('.dj-grid', body).style.gridTemplateColumns = '1fr';
   const canvas = $('canvas', body);
   const { ctx, size } = setupCanvas(canvas, 0.62, 300);
@@ -379,8 +382,8 @@ export function dijkstra(mount) {
     $('#dj-t', body).innerHTML = nodes.map((n, i) => i === src ? '' : `<tr class="${i === dst ? 'hit' : ''}"><td>${n.n}</td><td>${dist[i] === Infinity ? '∞' : dist[i]}</td><td>${dist[i] === Infinity ? '<span style="color:var(--danger)">unreachable</span>' : nodes[nextHop(i)].n}</td></tr>`).join('');
     const path = []; for (let x = dst; x >= 0; x = prev[x]) path.unshift(nodes[x].n);
     $('#dj-foot', w).innerHTML = res.dist[dst] === Infinity
-      ? `<span style="color:${COLORS.danger}">${nodes[dst].n} unreachable!</span> · click links to change cost, shift-click / long-press to cut`
-      : `shortest ${nodes[src].n}→${nodes[dst].n}: <b style="color:${COLORS.mint}">${path.join(' → ')}</b> (cost ${res.dist[dst]}) · <span style="color:${COLORS.muted}">click a link to change its cost · shift-click to cut · click a router: source, right-click: destination</span>`;
+      ? `<span style="color:${COLORS.danger}">${nodes[dst].n} ${tr('unreachable!', 'nicht erreichbar!')}</span> · ${tr('click links to change cost, shift-click / long-press to cut', 'Links anklicken ändert Kosten, Shift-Klick / lange drücken kappt')}`
+      : `${tr('shortest', 'kürzester Weg')} ${nodes[src].n}→${nodes[dst].n}: <b style="color:${COLORS.mint}">${path.join(' → ')}</b> (${tr('cost', 'Kosten')} ${res.dist[dst]}) · <span style="color:${COLORS.muted}">${tr('click a link to change its cost · shift-click to cut · click a router: source, right-click: destination', 'Link anklicken: Kosten ändern · Shift-Klick: kappen · Router anklicken: Quelle, Rechtsklick: Ziel')}</span>`;
   }
   const P = (n) => ({ x: n.x * size.w, y: n.y * size.h });
   const segD = (p, a, b) => { const dx = b.x - a.x, dy = b.y - a.y; const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy))); return Math.hypot(p.x - a.x - t * dx, p.y - a.y - t * dy); };
@@ -400,7 +403,7 @@ export function dijkstra(mount) {
       const ed = edges[hoverE];
       if (e.shiftKey || long) ed.cut = !ed.cut;
       else { ed.cut = false; ed.c = COSTS[(COSTS.indexOf(ed.c) + 1) % COSTS.length] ?? 1; }
-      store.award('dijkstra-edit', 10, 'You changed the topology');
+      store.award('dijkstra-edit', 10, tr('You changed the topology', 'Du hast die Topologie geändert'));
     }
     run();
   });

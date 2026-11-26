@@ -1,11 +1,12 @@
 import { h, $, $$, loop, setupCanvas, pointerPos, widgetShell, COLORS, store, sleep } from '../core.js';
+import { tr } from '../i18n.js';
 
 /* =========================================================
    Topology playground — presets, cut links, watch reachability
    ========================================================= */
 export function topology(mount) {
   const w = widgetShell('topology.lab', {
-    controls: `<div class="seg" role="tablist">${['bus', 'star', 'ring', 'mesh', 'tree'].map((t, i) => `<button data-t="${t}" class="${i === 1 ? 'on' : ''}">${t}</button>`).join('')}</div>`,
+    controls: `<div class="seg" role="tablist">${['bus', 'star', 'ring', 'mesh', 'tree'].map((t, i) => `<button data-t="${t}" class="${i === 1 ? 'on' : ''}">${tr(t, { bus: 'Bus', star: 'Stern', ring: 'Ring', mesh: 'Masche', tree: 'Baum' }[t])}</button>`).join('')}</div>`,
     foot: '<span id="topo-stat"></span>',
   });
   mount.appendChild(w);
@@ -87,8 +88,8 @@ export function topology(mount) {
     const hosts = nodes.map((n, i) => i).filter((i) => nodes[i].kind === 'host');
     const ok = hosts.filter((i) => reach.has(i)).length;
     const cut = links.filter((l) => l.cut).length;
-    stat.innerHTML = `source: <b style="color:${COLORS.mint}">node ${hosts.indexOf(src) + 1}</b> · reachable hosts: <b style="color:${ok === hosts.length ? COLORS.mint : COLORS.orange}">${ok}/${hosts.length}</b> · links: ${links.length} (${cut} cut) · <span style="color:${COLORS.muted}">click a link to cut it, click a host to make it the source</span>`;
-    if (cut >= 1 && ok < hosts.length) store.award('topo-partition', 10, 'You partitioned a network');
+    stat.innerHTML = `${tr('source', 'Quelle')}: <b style="color:${COLORS.mint}">${tr('node', 'Knoten')} ${hosts.indexOf(src) + 1}</b> · ${tr('reachable hosts', 'erreichbare Hosts')}: <b style="color:${ok === hosts.length ? COLORS.mint : COLORS.orange}">${ok}/${hosts.length}</b> · Links: ${links.length} (${cut} ${tr('cut', 'gekappt')}) · <span style="color:${COLORS.muted}">${tr('click a link to cut it, click a host to make it the source', 'Link anklicken zum Kappen, Host anklicken als Quelle')}</span>`;
+    if (cut >= 1 && ok < hosts.length) store.award('topo-partition', 10, tr('You partitioned a network', 'Du hast ein Netz geteilt'));
   }
 
   const P = (n) => ({ x: n.x * size.w, y: n.y * size.h });
@@ -191,19 +192,19 @@ export function topology(mount) {
    OSI explorer + encapsulation animator
    ========================================================= */
 const OSI = [
-  { n: 7, name: 'Application', pdu: 'Data', c: '#ff5c9a', ex: 'HTTP, DNS, SMTP, SSH', what: 'Where apps speak their protocols: browsers request pages, mail clients send email, resolvers look up names.', hdr: 'HTTP' },
-  { n: 6, name: 'Presentation', pdu: 'Data', c: '#ff7a45', ex: 'TLS, JPEG, UTF‑8, gzip', what: 'Translates data formats: encoding, compression and encryption so both ends interpret bytes the same way.', hdr: null },
-  { n: 5, name: 'Session', pdu: 'Data', c: '#ffd166', ex: 'Sessions, RPC, sockets', what: 'Opens, manages and closes dialogues between apps. In TCP/IP this is folded into the app and transport.', hdr: null },
-  { n: 4, name: 'Transport', pdu: 'Segment', c: '#5cf2c2', ex: 'TCP, UDP, QUIC', what: 'End‑to‑end delivery between programs using ports; TCP adds reliability, ordering and congestion control.', hdr: 'TCP' },
-  { n: 3, name: 'Network', pdu: 'Packet', c: '#4cc9ff', ex: 'IPv4, IPv6, ICMP', what: 'Logical addressing (IP) and routing across many networks from source to destination host.', hdr: 'IP' },
-  { n: 2, name: 'Data link', pdu: 'Frame', c: '#8b7bff', ex: 'Ethernet, Wi‑Fi, ARP', what: 'Delivers frames across one local link using MAC addresses; detects bit errors with a CRC.', hdr: 'ETH' },
-  { n: 1, name: 'Physical', pdu: 'Bits', c: '#b4bdd3', ex: 'Copper, fibre, radio', what: 'Turns bits into signals — voltages, light pulses, radio waves — and back.', hdr: null },
+  { n: 7, name: tr('Application', 'Anwendung'), pdu: tr('Data', 'Daten'), c: '#ff5c9a', ex: 'HTTP, DNS, SMTP, SSH', what: tr('Where apps speak their protocols: browsers request pages, mail clients send email, resolvers look up names.', 'Hier sprechen Apps ihre Protokolle: Browser fordern Seiten an, Mailprogramme senden E-Mails, Resolver schlagen Namen nach.'), hdr: 'HTTP' },
+  { n: 6, name: tr('Presentation', 'Darstellung'), pdu: tr('Data', 'Daten'), c: '#ff7a45', ex: 'TLS, JPEG, UTF‑8, gzip', what: tr('Translates data formats: encoding, compression and encryption so both ends interpret bytes the same way.', 'Übersetzt Datenformate: Codierung, Kompression und Verschlüsselung, damit beide Seiten Bytes gleich deuten.'), hdr: null },
+  { n: 5, name: tr('Session', 'Sitzung'), pdu: tr('Data', 'Daten'), c: '#ffd166', ex: tr('Sessions, RPC, sockets', 'Sitzungen, RPC, Sockets'), what: tr('Opens, manages and closes dialogues between apps. In TCP/IP this is folded into the app and transport.', 'Öffnet, verwaltet und schließt Dialoge zwischen Apps. In TCP/IP steckt das in Anwendung und Transport.'), hdr: null },
+  { n: 4, name: 'Transport', pdu: 'Segment', c: '#5cf2c2', ex: 'TCP, UDP, QUIC', what: tr('End‑to‑end delivery between programs using ports; TCP adds reliability, ordering and congestion control.', 'Ende-zu-Ende-Zustellung zwischen Programmen über Ports; TCP ergänzt Zuverlässigkeit, Reihenfolge und Staukontrolle.'), hdr: 'TCP' },
+  { n: 3, name: tr('Network', 'Vermittlung'), pdu: tr('Packet', 'Paket'), c: '#4cc9ff', ex: 'IPv4, IPv6, ICMP', what: tr('Logical addressing (IP) and routing across many networks from source to destination host.', 'Logische Adressierung (IP) und Routing über viele Netze vom Quell- zum Zielhost.'), hdr: 'IP' },
+  { n: 2, name: tr('Data link', 'Sicherung'), pdu: tr('Frame', 'Rahmen'), c: '#8b7bff', ex: 'Ethernet, Wi‑Fi, ARP', what: tr('Delivers frames across one local link using MAC addresses; detects bit errors with a CRC.', 'Liefert Rahmen über eine lokale Leitung mit MAC-Adressen; erkennt Bitfehler per CRC.'), hdr: 'ETH' },
+  { n: 1, name: tr('Physical', 'Bitübertragung'), pdu: 'Bits', c: '#b4bdd3', ex: tr('Copper, fibre, radio', 'Kupfer, Glasfaser, Funk'), what: tr('Turns bits into signals — voltages, light pulses, radio waves — and back.', 'Macht aus Bits Signale – Spannungen, Lichtpulse, Funkwellen – und zurück.'), hdr: null },
 ];
 
 export function osi(mount) {
   const w = widgetShell('osi.explorer', {
-    controls: `<button class="btn small" id="osi-send">▶ Send "GET /"</button><button class="btn small ghost" id="osi-recv">◀ Receive</button>`,
-    foot: '<span id="osi-foot">Click a layer to learn what it does.</span>',
+    controls: `<button class="btn small" id="osi-send">▶ ${tr('Send', 'Senden')} "GET /"</button><button class="btn small ghost" id="osi-recv">◀ ${tr('Receive', 'Empfangen')}</button>`,
+    foot: `<span id="osi-foot">${tr('Click a layer to learn what it does.', 'Klick eine Schicht an, um zu sehen, was sie tut.')}</span>`,
   });
   mount.appendChild(w);
   const body = $('.widget-body', w);
@@ -218,10 +219,10 @@ export function osi(mount) {
   function show(n) {
     const l = OSI.find((x) => x.n === n);
     $$('.osi-layer', body).forEach((b) => b.classList.toggle('active', +b.dataset.n === n));
-    const tcpip = n >= 5 ? 'Application' : n === 4 ? 'Transport' : n === 3 ? 'Internet' : 'Link';
-    detail.innerHTML = `<span class="tag" style="color:${l.c};border-color:${l.c}55">Layer ${l.n} · TCP/IP: ${tcpip}</span>
+    const tcpip = n >= 5 ? tr('Application', 'Anwendung') : n === 4 ? 'Transport' : n === 3 ? 'Internet' : tr('Link', 'Netzzugang');
+    detail.innerHTML = `<span class="tag" style="color:${l.c};border-color:${l.c}55">${tr('Layer', 'Schicht')} ${l.n} · TCP/IP: ${tcpip}</span>
       <h3 style="margin-top:12px">${l.name}</h3><p>${l.what}</p>
-      <div class="kv"><div><small>PDU</small><b>${l.pdu}</b></div><div><small>Examples</small><b style="font-size:.85rem">${l.ex}</b></div></div>
+      <div class="kv"><div><small>PDU</small><b>${l.pdu}</b></div><div><small>${tr('Examples', 'Beispiele')}</small><b style="font-size:.85rem">${l.ex}</b></div></div>
       <div id="osi-packet" style="margin-top:18px"></div>`;
   }
   show(7);
@@ -252,11 +253,11 @@ export function osi(mount) {
         box.innerHTML = pkt(reverse && i > 0 ? seq[i].parts : ps);
       }
       foot.innerHTML = reverse
-        ? `<span style="color:${l.c}">L${l.n} ${l.name}</span> — ${l.hdr ? `reads & strips the ${l.hdr} header` : l.n === 1 ? 'turns signals back into bits' : 'nothing to strip in TCP/IP'}`
-        : `<span style="color:${l.c}">L${l.n} ${l.name}</span> — ${l.hdr ? `adds the ${l.hdr} header${l.hdr === 'ETH' ? ' + FCS trailer' : ''}` : l.n === 1 ? 'sends the frame as signals on the wire' : 'handled inside the app in TCP/IP'}`;
+        ? `<span style="color:${l.c}">L${l.n} ${l.name}</span> — ${l.hdr ? tr(`reads & strips the ${l.hdr} header`, `liest & entfernt den ${l.hdr}-Header`) : l.n === 1 ? tr('turns signals back into bits', 'macht aus Signalen wieder Bits') : tr('nothing to strip in TCP/IP', 'in TCP/IP nichts zu entfernen')}`
+        : `<span style="color:${l.c}">L${l.n} ${l.name}</span> — ${l.hdr ? tr(`adds the ${l.hdr} header${l.hdr === 'ETH' ? ' + FCS trailer' : ''}`, `fügt den ${l.hdr}-Header hinzu${l.hdr === 'ETH' ? ' + FCS-Trailer' : ''}`) : l.n === 1 ? tr('sends the frame as signals on the wire', 'sendet den Rahmen als Signale auf die Leitung') : tr('handled inside the app in TCP/IP', 'in TCP/IP Teil der App')}`;
       await sleep(1100);
     }
-    store.award(reverse ? 'osi-decap' : 'osi-encap', 10, reverse ? 'Decapsulation complete' : 'Encapsulation complete');
+    store.award(reverse ? 'osi-decap' : 'osi-encap', 10, reverse ? tr('Decapsulation complete', 'Entkapselung fertig') : tr('Encapsulation complete', 'Kapselung fertig'));
     busy = false;
   }
 
@@ -332,7 +333,7 @@ export function signal(mount) {
     ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.setLineDash([3, 4]);
     ctx.beginPath(); ctx.moveTo(cx, top - 10); ctx.lineTo(cx, bot + 6); ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle = COLORS.muted; ctx.font = '11px JetBrains Mono'; ctx.textAlign = 'left';
-    ctx.fillText(mode === 'NRZ' ? 'high = 1, low = 0' : mode === 'Manchester' ? 'rising mid-bit = 1, falling = 0 (IEEE 802.3)' : '4 levels → 2 bits per symbol (Gray coded)', pad, H - 10);
+    ctx.fillText(mode === 'NRZ' ? tr('high = 1, low = 0', 'hoch = 1, niedrig = 0') : mode === 'Manchester' ? tr('rising mid-bit = 1, falling = 0 (IEEE 802.3)', 'steigend in Bitmitte = 1, fallend = 0 (IEEE 802.3)') : tr('4 levels → 2 bits per symbol (Gray coded)', '4 Stufen → 2 Bit pro Symbol (Gray-codiert)'), pad, H - 10);
   }, canvas);
 }
 
@@ -352,8 +353,8 @@ export function bits(mount) {
       <div class="row">${[7, 6, 5, 4, 3, 2, 1, 0].map((b) => `<button class="bit" data-b="${b}" aria-label="octet ${o + 1} bit ${b}">0</button>`).join('')}</div>
       <div class="dec">0</div></div>`).join('')}</div>
     <div style="margin-top:18px;display:flex;gap:14px;flex-wrap:wrap;align-items:end">
-      <div class="field" style="flex:1;min-width:200px"><label>Dotted decimal</label><input class="input" id="bits-ip" value="192.168.1.42"></div>
-      <div class="field" style="flex:2;min-width:240px"><label>Binary</label><div class="input" id="bits-bin" style="overflow-x:auto;white-space:nowrap"></div></div>
+      <div class="field" style="flex:1;min-width:200px"><label>${tr('Dotted decimal', 'Dezimal mit Punkten')}</label><input class="input" id="bits-ip" value="192.168.1.42"></div>
+      <div class="field" style="flex:2;min-width:240px"><label>${tr('Binary', 'Binär')}</label><div class="input" id="bits-bin" style="overflow-x:auto;white-space:nowrap"></div></div>
     </div>`;
   const ipIn = $('#bits-ip', body);
   const render = () => {
@@ -365,8 +366,8 @@ export function bits(mount) {
     $('#bits-bin', body).textContent = val.map((v) => v.toString(2).padStart(8, '0')).join('.');
     if (document.activeElement !== ipIn) ipIn.value = val.join('.');
     const total = val.reduce((n, v) => n * 256 + v, 0);
-    $('#bits-foot', w).innerHTML = `as one 32-bit number: <b style="color:${COLORS.mint}">${total.toLocaleString('en-US')}</b> · hex: <b style="color:${COLORS.violet}">0x${total.toString(16).padStart(8, '0').toUpperCase()}</b>`;
-    if (val.join('.') === '255.255.255.255') store.award('bits-all', 10, 'All 32 bits set!');
+    $('#bits-foot', w).innerHTML = `${tr('as one 32-bit number', 'als eine 32-Bit-Zahl')}: <b style="color:${COLORS.mint}">${total.toLocaleString('en-US')}</b> · hex: <b style="color:${COLORS.violet}">0x${total.toString(16).padStart(8, '0').toUpperCase()}</b>`;
+    if (val.join('.') === '255.255.255.255') store.award('bits-all', 10, tr('All 32 bits set!', 'Alle 32 Bits gesetzt!'));
   };
   body.addEventListener('click', (e) => {
     const b = e.target.closest('.bit'); if (!b) return;

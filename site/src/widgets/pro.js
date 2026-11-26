@@ -1,4 +1,5 @@
 import { $, $$, loop, setupCanvas, pointerPos, widgetShell, COLORS, store, pick, rand } from '../core.js';
+import { tr } from '../i18n.js';
 
 /* =========================================================
    Wi‑Fi floor plan: drag APs + laptop, see RSSI / SINR / rate
@@ -11,7 +12,7 @@ const WALLS = [
   [14, 0, 14, 3, 10], [14, 4.5, 14, 6, 10],
   [0, 7, 3, 7, 4], [4.5, 7, 8, 7, 4],
 ];
-const ROOMS = [['Living room', 4, 3.4], ['Kitchen', 11, 3], ['Bath', 17, 2.6], ['Bedroom', 4, 9.8], ['Office', 14, 9.5]];
+const ROOMS = [[tr('Living room', 'Wohnzimmer'), 4, 3.4], [tr('Kitchen', 'Küche'), 11, 3], [tr('Bath', 'Bad'), 17, 2.6], [tr('Bedroom', 'Schlafzimmer'), 4, 9.8], [tr('Office', 'Büro'), 14, 9.5]];
 const RATES = [[5, 'BPSK 1/2', 7], [8, 'QPSK 1/2', 14], [11, 'QPSK 3/4', 21], [15, '16-QAM 1/2', 29], [18, '16-QAM 3/4', 43], [22, '64-QAM 2/3', 58], [25, '64-QAM 3/4', 65], [28, '64-QAM 5/6', 72], [32, '256-QAM 3/4', 87], [35, '256-QAM 5/6', 96], [38, '1024-QAM 5/6', 120]];
 const segX = (ax, ay, bx, by, cx, cy, dx, dy) => {
   const d = (bx - ax) * (dy - cy) - (by - ay) * (dx - cx);
@@ -24,8 +25,8 @@ const segX = (ax, ay, bx, by, cx, cy, dx, dy) => {
 export function wifi(mount) {
   const w = widgetShell('wifi.planner', {
     controls: `<div class="seg" id="wf-band"><button data-b="2.4" class="on">2.4 GHz</button><button data-b="5">5 GHz</button></div>
-      <label class="mono" style="font-size:.72rem;color:var(--muted);display:flex;gap:6px;align-items:center">AP1 ch <select class="input" id="wf-c1" style="width:auto;padding:4px 6px"><option>1</option><option selected>6</option><option>11</option></select></label>
-      <label class="mono" style="font-size:.72rem;color:var(--muted);display:flex;gap:6px;align-items:center">AP2 ch <select class="input" id="wf-c2" style="width:auto;padding:4px 6px"><option>1</option><option selected>6</option><option>11</option></select></label>
+      <label class="mono" style="font-size:.72rem;color:var(--muted);display:flex;gap:6px;align-items:center">AP1 ${tr('ch', 'Kanal')} <select class="input" id="wf-c1" style="width:auto;padding:4px 6px"><option>1</option><option selected>6</option><option>11</option></select></label>
+      <label class="mono" style="font-size:.72rem;color:var(--muted);display:flex;gap:6px;align-items:center">AP2 ${tr('ch', 'Kanal')} <select class="input" id="wf-c2" style="width:auto;padding:4px 6px"><option>1</option><option selected>6</option><option>11</option></select></label>
       <label class="mono" style="font-size:.72rem;color:var(--muted);display:flex;gap:6px;align-items:center"><input type="checkbox" id="wf-ap2" checked> AP2</label>`,
     foot: '<span id="wf-foot"></span>',
   });
@@ -61,7 +62,7 @@ export function wifi(mount) {
     const sinr = r[bi] - nPlusI;
     let rate = RATES.filter(([s]) => sinr >= s).pop();
     const mult = band === '5' ? 2 * 4.25 : 2;
-    return { rssi: r[bi], ap: bi, sinr, cochannel, mcs: rate ? rate[1] : 'no link', mbps: rate ? Math.round(rate[2] * mult * (cochannel ? 0.5 : 1)) : 0 };
+    return { rssi: r[bi], ap: bi, sinr, cochannel, mcs: rate ? rate[1] : tr('no link', 'keine Verbindung'), mbps: rate ? Math.round(rate[2] * mult * (cochannel ? 0.5 : 1)) : 0 };
   }
   function buildHeat() {
     const step = 10;
@@ -91,7 +92,7 @@ export function wifi(mount) {
     drag.x = Math.max(0.4, Math.min(W - 0.4, (p.x / size.w) * W)); drag.y = Math.max(0.4, Math.min(H - 0.4, (p.y / size.h) * H));
     if (drag !== items.lap) dirty = true;
   });
-  canvas.addEventListener('pointerup', () => { if (drag) store.award('wifi-drag', 5, 'Site survey started'); drag = null; });
+  canvas.addEventListener('pointerup', () => { if (drag) store.award('wifi-drag', 5, tr('Site survey started', 'Funkausleuchtung gestartet')); drag = null; });
   $$('#wf-band button', w).forEach((b) => b.addEventListener('click', () => { $$('#wf-band button', w).forEach((x) => x.classList.toggle('on', x === b)); band = b.dataset.b; dirty = true; }));
   ['#wf-c1', '#wf-c2', '#wf-ap2'].forEach((id) => $(id, w).addEventListener('change', () => (dirty = true)));
   let lastSize = 0;
@@ -125,9 +126,9 @@ export function wifi(mount) {
     ctx.fillStyle = 'rgba(8,11,22,0.85)'; ctx.strokeStyle = L.mbps ? COLORS.mint : COLORS.danger; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(lx, ly, 20, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.font = '18px sans-serif'; ctx.fillText('💻', lx, ly + 1);
-    const q = L.rssi > -55 ? ['Excellent', COLORS.mint] : L.rssi > -67 ? ['Good', COLORS.mint] : L.rssi > -75 ? ['Fair', COLORS.yellow] : ['Poor', COLORS.danger];
-    $('#wf-foot', w).innerHTML = `connected to <b>${ap.label}</b> · RSSI <b style="color:${q[1]}">${L.rssi.toFixed(0)} dBm (${q[0]})</b> · SINR <b>${L.sinr.toFixed(0)} dB</b> · ${L.mcs} → <b style="color:${COLORS.mint}">~${L.mbps} Mbps</b>${L.cochannel ? ` · <span style="color:${COLORS.orange}">⚠ both APs on channel ${chans()[0]}: interference + shared airtime</span>` : ''} <span style="color:var(--muted)">· drag the APs and the laptop</span>`;
-    if (L.rssi < -80 && list.length === 2 && !L.cochannel) store.award('wifi-deadzone', 5, 'Found a dead zone');
+    const q = L.rssi > -55 ? [tr('Excellent', 'Hervorragend'), COLORS.mint] : L.rssi > -67 ? [tr('Good', 'Gut'), COLORS.mint] : L.rssi > -75 ? [tr('Fair', 'Mittel'), COLORS.yellow] : [tr('Poor', 'Schlecht'), COLORS.danger];
+    $('#wf-foot', w).innerHTML = `${tr('connected to', 'verbunden mit')} <b>${ap.label}</b> · RSSI <b style="color:${q[1]}">${L.rssi.toFixed(0)} dBm (${q[0]})</b> · SINR <b>${L.sinr.toFixed(0)} dB</b> · ${L.mcs} → <b style="color:${COLORS.mint}">~${L.mbps} Mbps</b>${L.cochannel ? ` · <span style="color:${COLORS.orange}">⚠ ${tr(`both APs on channel ${chans()[0]}: interference + shared airtime`, `beide APs auf Kanal ${chans()[0]}: Störungen + geteilte Sendezeit`)}</span>` : ''} <span style="color:var(--muted)">· ${tr('drag the APs and the laptop', 'zieh die APs und den Laptop')}</span>`;
+    if (L.rssi < -80 && list.length === 2 && !L.cochannel) store.award('wifi-deadzone', 5, tr('Found a dead zone', 'Funkloch gefunden'));
   }, canvas);
 }
 
@@ -136,9 +137,9 @@ export function wifi(mount) {
    ========================================================= */
 export function loadbalancer(mount) {
   const w = widgetShell('lb.sim', {
-    controls: `<div class="seg" id="lb-alg"><button data-a="rr" class="on">Round robin</button><button data-a="lc">Least conn</button><button data-a="w">Weighted</button><button data-a="hash">IP hash</button></div>`,
-    foot: `<label class="mono" style="font-size:.75rem;display:flex;gap:8px;align-items:center">traffic <input type="range" id="lb-rate" min="1" max="14" value="6" style="width:110px"></label>
-      <button class="btn small ghost" data-t="slow">🐢 Make B slow</button><button class="btn small ghost" data-t="kill" data-s="2">💀 Kill C</button><button class="btn small ghost" id="lb-reset">↺ Reset stats</button><span id="lb-stats" style="flex-basis:100%"></span>`,
+    controls: `<div class="seg" id="lb-alg"><button data-a="rr" class="on">Round robin</button><button data-a="lc">Least Conn</button><button data-a="w">${tr('Weighted', 'Gewichtet')}</button><button data-a="hash">IP-Hash</button></div>`,
+    foot: `<label class="mono" style="font-size:.75rem;display:flex;gap:8px;align-items:center">${tr('traffic', 'Verkehr')} <input type="range" id="lb-rate" min="1" max="14" value="6" style="width:110px"></label>
+      <button class="btn small ghost" data-t="slow">🐢 ${tr('Make B slow', 'B verlangsamen')}</button><button class="btn small ghost" data-t="kill" data-s="2">💀 ${tr('Kill C', 'C abschalten')}</button><button class="btn small ghost" id="lb-reset">↺ ${tr('Reset stats', 'Statistik zurücksetzen')}</button><span id="lb-stats" style="flex-basis:100%"></span>`,
   });
   mount.appendChild(w);
   const body = $('.widget-body', w);
@@ -188,12 +189,12 @@ export function loadbalancer(mount) {
   $$('#lb-alg button', w).forEach((b) => b.addEventListener('click', () => { $$('#lb-alg button', w).forEach((x) => x.classList.toggle('on', x === b)); alg = b.dataset.a; resetStats(); }));
   const resetStats = () => (stats = { ok: 0, fail: 0, lat: [], per: [0, 0, 0] });
   $('#lb-reset', w).onclick = resetStats;
-  $('[data-t="slow"]', w).onclick = (e) => { const s = servers[1]; s.slow = !s.slow; s.svc = s.slow ? 4 : 0.9; e.target.textContent = s.slow ? '⚡ Make B fast' : '🐢 Make B slow'; store.award('lb-slow', 5, 'Introduced a slow backend'); };
+  $('[data-t="slow"]', w).onclick = (e) => { const s = servers[1]; s.slow = !s.slow; s.svc = s.slow ? 4 : 0.9; e.target.textContent = s.slow ? tr('⚡ Make B fast', '⚡ B beschleunigen') : tr('🐢 Make B slow', '🐢 B verlangsamen'); store.award('lb-slow', 5, tr('Introduced a slow backend', 'Langsames Backend eingebaut')); };
   $('[data-t="kill"]', w).onclick = (e) => {
     const s = servers[2]; s.up = !s.up;
     if (!s.up) { s.active.forEach(() => stats.fail++); s.queue.forEach(() => stats.fail++); s.active = []; s.queue = []; }
-    e.target.textContent = s.up ? '💀 Kill C' : '💚 Revive C';
-    store.award('lb-kill', 5, 'Failure injected');
+    e.target.textContent = s.up ? tr('💀 Kill C', '💀 C abschalten') : tr('💚 Revive C', '💚 C wiederbeleben');
+    store.award('lb-kill', 5, tr('Failure injected', 'Ausfall simuliert'));
   };
 
   loop((dt, t) => {
@@ -219,7 +220,7 @@ export function loadbalancer(mount) {
         }
       }
     });
-    if (stats.ok > 150 && alg === 'lc' && servers[1].slow) store.award('lb-lc', 15, 'Least-connections tamed the slow server');
+    if (stats.ok > 150 && alg === 'lc' && servers[1].slow) store.award('lb-lc', 15, tr('Least-connections tamed the slow server', 'Least Connections hat den langsamen Server gebändigt'));
 
     ctx.clearRect(0, 0, size.w, size.h);
     const lb = P.lb();
@@ -239,7 +240,7 @@ export function loadbalancer(mount) {
       ctx.fillStyle = COLORS.text; ctx.font = '700 12px JetBrains Mono'; ctx.textAlign = 'left';
       ctx.fillText(`Server ${s.n}${s.slow ? ' 🐢' : ''}${!s.up ? ' 💀' : ''}`, p.x - bw / 2 + 10, p.y - 14);
       ctx.font = '10px JetBrains Mono'; ctx.fillStyle = COLORS.muted;
-      ctx.fillText(`w=${s.weight} cap=${s.cap} ${s.healthy ? '' : 'UNHEALTHY'}`, p.x - bw / 2 + 10, p.y + 1);
+      ctx.fillText(`w=${s.weight} cap=${s.cap} ${s.healthy ? '' : tr('UNHEALTHY', 'KRANK')}`, p.x - bw / 2 + 10, p.y + 1);
       // load bar
       const load = Math.min(1, (s.active.length + s.queue.length) / (s.cap * 3));
       ctx.fillStyle = 'rgba(160,175,220,0.12)'; ctx.fillRect(p.x - bw / 2 + 10, p.y + 12, bw - 20, 6);
@@ -258,7 +259,7 @@ export function loadbalancer(mount) {
     const lat = stats.lat.length ? stats.lat.reduce((a, b) => a + b, 0) / stats.lat.length : 0;
     const p95 = stats.lat.length ? [...stats.lat].sort((a, b) => a - b)[Math.floor(stats.lat.length * 0.95)] : 0;
     const el = $('#lb-stats', w);
-    if (el && Math.floor(t * 4) !== Math.floor((t - dt) * 4)) el.innerHTML = `served <b style="color:${COLORS.mint}">${stats.ok}</b> · failed <b style="color:${stats.fail ? COLORS.danger : COLORS.dim}">${stats.fail}</b> · avg latency <b>${(lat * 1000).toFixed(0)} ms</b> · p95 <b style="color:${p95 > 3 ? COLORS.orange : COLORS.text}">${(p95 * 1000).toFixed(0)} ms</b> · share A/B/C: ${stats.per.join(' / ')} <span style="color:var(--muted)">· <span style="color:${COLORS.sky}">●</span> request <span style="color:${COLORS.mint}">●</span> response <span style="color:${COLORS.yellow}">●</span> health check</span>`;
+    if (el && Math.floor(t * 4) !== Math.floor((t - dt) * 4)) el.innerHTML = `${tr('served', 'bedient')} <b style="color:${COLORS.mint}">${stats.ok}</b> · ${tr('failed', 'fehlgeschlagen')} <b style="color:${stats.fail ? COLORS.danger : COLORS.dim}">${stats.fail}</b> · ${tr('avg latency', 'Ø Latenz')} <b>${(lat * 1000).toFixed(0)} ms</b> · p95 <b style="color:${p95 > 3 ? COLORS.orange : COLORS.text}">${(p95 * 1000).toFixed(0)} ms</b> · ${tr('share', 'Anteil')} A/B/C: ${stats.per.join(' / ')} <span style="color:var(--muted)">· <span style="color:${COLORS.sky}">●</span> ${tr('request', 'Anfrage')} <span style="color:${COLORS.mint}">●</span> ${tr('response', 'Antwort')} <span style="color:${COLORS.yellow}">●</span> Health Check</span>`;
   }, canvas);
   void pick;
 }
